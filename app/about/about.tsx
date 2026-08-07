@@ -3,7 +3,6 @@ import Image from "next/image";
 import {
   SiteFooter,
   SiteHeader,
-  siteLinkClassName,
 } from "@/components/site-chrome";
 
 const metadataItems = [
@@ -46,6 +45,9 @@ const recruitingRoles = [
       "Remote volunteer position with no experience required, willingness to learn on the job, and flexibility to make your own schedule.",
   },
 ];
+
+const aboutAccentLinkClassName =
+  "text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 transition-colors hover:text-[#7E22CE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000]";
 
 function Section({
   eyebrow,
@@ -98,10 +100,15 @@ export default function About() {
                 Open, professional, neutral discussion for American civic life.
               </h1>
               <p className="mt-5 max-w-full break-words text-lg leading-8 text-[#1f1f1f] sm:max-w-3xl sm:text-xl sm:leading-9">
-                TownHallUS.com is a political and social discussion forum
-                service offered by Non-Partisan Alliance, Inc. for American
-                registered voters and American citizens between the ages of 13
-                and 17.
+                <span className="font-semibold text-[#9333EA]">
+                  TownHallUS.com
+                </span>{" "}
+                is a political and social discussion forum service offered by
+                <span className="font-semibold text-[#9333EA]">
+                  Non-Partisan Alliance, Inc.
+                </span>{" "}
+                for American registered voters and American citizens between the
+                ages of 13 and 17.
               </p>
             </div>
 
@@ -111,11 +118,11 @@ export default function About() {
             >
               <div className="flex items-center gap-4">
                 <span className="flex size-16 items-center justify-center rounded-lg border border-[#999999] bg-[#ffffff]">
-                  <Image src="/globe.svg" alt="" width={36} height={36} />
+                  <Image src="/logo.svg" alt="" width={36} height={36} />
                 </span>
                 <div>
                   <p className="text-sm text-[#4d4d4d]">Organization</p>
-                  <p className="font-semibold text-[#000000]">
+                  <p className="font-semibold text-[#9333EA]">
                     Non-Partisan Alliance, Inc.
                   </p>
                 </div>
@@ -127,9 +134,7 @@ export default function About() {
                     key={item.label}
                     className="grid gap-1 py-3 text-sm sm:grid-cols-[96px_1fr] sm:gap-3"
                   >
-                    <dt className="font-medium text-[#4d4d4d]">
-                      {item.label}
-                    </dt>
+                    <dt className="font-medium text-[#4d4d4d]">{item.label}</dt>
                     <dd className="min-w-0 break-words text-[#000000]">
                       {item.value}
                     </dd>
@@ -143,13 +148,14 @@ export default function About() {
         <Section eyebrow="Purpose" title="What Are We?">
           <div className="max-w-4xl">
             <p>
-              <strong>TownHallUS.com</strong> is an open, professional and
-              neutral political and social discussion forum service offered by{" "}
+              <strong className="text-[#9333EA]">TownHallUS.com</strong> is an
+              open, professional and neutral political and social discussion
+              forum service offered by{" "}
               <a
                 href="https://www.non-partisan.online/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={siteLinkClassName}
+                className={aboutAccentLinkClassName}
               >
                 Non-Partisan Alliance, Inc.
               </a>{" "}
@@ -157,14 +163,20 @@ export default function About() {
               between the ages of 13 and 17.
             </p>
             <p className="mt-5">
-              Non-Partisan Alliance, Inc. is a non-profit 501(c)(3)
-              organization registered in the State of Delaware and operates only
-              in the United States of America.
+              <span className="font-semibold text-[#9333EA]">
+                Non-Partisan Alliance, Inc.
+              </span>{" "}
+              is a non-profit 501(c)(3) organization registered in the State of
+              Delaware and operates only in the United States of America.
             </p>
           </div>
         </Section>
 
-        <Section eyebrow="Mission" title="What We Stand For" surface="container">
+        <Section
+          eyebrow="Mission"
+          title="What We Stand For"
+          surface="container"
+        >
           <ol className="grid list-none gap-3 lg:grid-cols-2">
             {missions.map((mission, index) => (
               <li
@@ -220,7 +232,7 @@ export default function About() {
               Please email your resume to{" "}
               <a
                 href="mailto:support@townhallus.com"
-                className={siteLinkClassName}
+                className={aboutAccentLinkClassName}
               >
                 support@townhallus.com
               </a>

@@ -18,7 +18,7 @@ const headerLinks = [
 ] as const;
 
 const footerLinks = [
-  { href: "/gamerules", label: "gamerules" },
+  { href: "/Game Rules", label: "Game Rules" },
   { href: "/privacy", label: "Privacy & Cookie" },
   { href: "/terms", label: "Term" },
   { href: "/userrules", label: "User Rules" },
@@ -40,14 +40,14 @@ export function SiteHeader() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-11 gap-2 rounded-lg border-[#999999] bg-[#f7f7f7] px-3 text-base text-[#000000] shadow-[0_1px_1px_rgba(0,0,0,0.14)] hover:bg-[#d6d6d6]"
+                className="h-11 gap-2 rounded-lg border-[#9333EA] bg-[#f7f7f7] px-3 text-base text-[#000000] shadow-[0_1px_1px_rgba(0,0,0,0.14)] hover:bg-[#d6d6d6]"
               />
             }
           >
             <MenuIcon className="size-5" aria-hidden="true" />
             <span>Menu</span>
             <Image
-              src="/globe.svg"
+              src="/logo.svg"
               alt=""
               width={18}
               height={18}
@@ -64,7 +64,7 @@ export function SiteHeader() {
             <DropdownMenuGroup>
               <DropdownMenuItem
                 render={<Link href="/" />}
-                className="cursor-pointer px-3 py-2 text-[#4d4d4d] focus:bg-[#d6d6d6] focus:text-[#000000]"
+                className="cursor-pointer px-3 py-2 text-[#9333EA] focus:bg-[#d6d6d6] focus:text-[#7E22CE]"
               >
                 TownHallUS.com
               </DropdownMenuItem>
@@ -98,8 +98,8 @@ export function SiteHeader() {
                   size="lg"
                   className={
                     link.variant === "default"
-                      ? "h-10 bg-[#000000] px-4 text-[#ffffff] hover:bg-[#4d4d4d]"
-                      : "h-10 border-[#808080] bg-transparent px-4 text-[#000000] hover:bg-[#d6d6d6]"
+                      ? "h-10 bg-[#9333EA] px-4 text-[#ffffff] hover:bg-[#7E22CE]"
+                      : "h-10 border-[#9333EA] bg-transparent px-4 text-[#000000] hover:bg-[#d6d6d6]"
                   }
                 >
                   {link.label}
@@ -123,7 +123,7 @@ export function SiteFooter() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="block rounded-lg px-3 py-2 text-[#000000] no-underline transition-colors hover:bg-[#d6d6d6] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#000000]"
+                  className="block rounded-lg px-3 py-2 text-[#9333EA] no-underline transition-colors hover:bg-[#d6d6d6] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#000000]"
                 >
                   {link.label}
                 </Link>
@@ -138,7 +138,7 @@ export function SiteFooter() {
             href="https://www.non-partisan.online/"
             target="_blank"
             rel="noopener noreferrer"
-            className={siteLinkClassName}
+            className="text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 transition-colors hover:text-[#7E22CE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000]"
           >
             Non-Partisan Alliance, Inc.
           </a>

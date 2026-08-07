@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
-import { ChevronDownIcon, CircleHelpIcon, MailIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  CircleHelpIcon,
+  MailIcon,
+  MessageCircleReplyIcon,
+} from "lucide-react";
 
 import {
   SiteFooter,
   SiteHeader,
-  siteLinkClassName,
 } from "@/components/site-chrome";
 
 export const metadata: Metadata = {
@@ -15,6 +19,9 @@ export const metadata: Metadata = {
 
 const highlightClassName =
   "font-semibold text-[#000000] underline decoration-[#808080] decoration-2 underline-offset-4";
+
+const contactLinkClassName =
+  "text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 transition-colors hover:text-[#7E22CE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000]";
 
 const faqs: ReadonlyArray<{
   question: string;
@@ -237,9 +244,9 @@ export default function FAQPage() {
                   </summary>
                   <div className="border-t border-[#c4c4c4] px-4 pb-5 pt-4 sm:px-5">
                     <div className="grid gap-3 sm:grid-cols-[48px_1fr] sm:gap-4">
-                      <span className="hidden size-12 items-center justify-center rounded-lg border border-[#b3b3b3] bg-[#eeeeee] sm:flex">
-                        <CircleHelpIcon
-                          className="size-6 text-[#666666]"
+                      <span className="hidden size-12 items-center justify-center rounded-lg border border-[#9333EA] bg-[#9333EA] sm:flex">
+                        <MessageCircleReplyIcon
+                          className="size-6 text-[#ffffff]"
                           aria-hidden="true"
                         />
                       </span>
@@ -265,7 +272,7 @@ export default function FAQPage() {
                 please email us at{" "}
                 <a
                   href="mailto:support@townhallus.com"
-                  className={siteLinkClassName}
+                  className={contactLinkClassName}
                 >
                   support@townhallus.com
                 </a>

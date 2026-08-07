@@ -2,8 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, LoaderCircleIcon, TriangleAlertIcon } from "lucide-react";
-import { ChangeEvent, FormEvent, useState } from "react";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  LoaderCircleIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
+import {
+  ChangeEvent,
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { apiUrl } from "@/lib/api-client";
 
@@ -182,13 +195,181 @@ function FieldError({ message }: Readonly<{ message?: string }>) {
   );
 }
 
+function StateSelect({
+  value,
+  onChange,
+}: Readonly<{
+  value: string;
+  onChange: (value: string) => void;
+}>) {
+  const selectedIndex = value ? states.indexOf(value) : -1;
+  const defaultActiveIndex = selectedIndex >= 0 ? selectedIndex : 0;
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(defaultActiveIndex);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function handleDocumentPointerDown(event: MouseEvent | TouchEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentPointerDown);
+    document.addEventListener("touchstart", handleDocumentPointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentPointerDown);
+      document.removeEventListener("touchstart", handleDocumentPointerDown);
+    };
+  }, []);
+
+  function openStateList() {
+    setActiveIndex(defaultActiveIndex);
+    setOpen(true);
+  }
+
+  function toggleStateList() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+
+    openStateList();
+  }
+
+  function selectState(nextState: string) {
+    onChange(nextState);
+    setOpen(false);
+    requestAnimationFrame(() => buttonRef.current?.focus());
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement | HTMLDivElement>) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!open) {
+        openStateList();
+        return;
+      }
+      setActiveIndex((current) =>
+        Math.min(current + 1, states.length - 1)
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        openStateList();
+        return;
+      }
+      setActiveIndex((current) => Math.max(current - 1, 0));
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex(states.length - 1);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (open) {
+        selectState(states[activeIndex]);
+        return;
+      }
+      openStateList();
+      return;
+    }
+
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      setOpen(false);
+      buttonRef.current?.focus();
+    }
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        ref={buttonRef}
+        id="state"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls="state-options"
+        onClick={toggleStateList}
+        onKeyDown={handleKeyDown}
+        className={`${inputClassName} flex items-center justify-between gap-3 text-left`}
+      >
+        <span className={value ? "text-[#000000]" : "text-[#666666]"}>
+          {value || "Please select your state..."}
+        </span>
+        <ChevronDownIcon
+          className={`size-5 shrink-0 text-[#4d4d4d] transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden="true"
+        />
+      </button>
+      <input type="hidden" name="state" value={value} />
+
+      {open ? (
+        <div
+          id="state-options"
+          role="listbox"
+          aria-label="State"
+          onKeyDown={handleKeyDown}
+          className="absolute left-0 right-0 top-full z-40 mt-1 max-h-56 overflow-y-auto rounded-md border border-[#9333EA] bg-[#f7f7f7] py-1 shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+        >
+          {states.map((state, index) => {
+            const highlighted = index === activeIndex || state === value;
+
+            return (
+              <button
+                id={`state-option-${index}`}
+                key={state}
+                type="button"
+                role="option"
+                aria-selected={state === value}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => selectState(state)}
+                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none ${
+                  highlighted
+                    ? "bg-[#9333EA] text-[#ffffff]"
+                    : "bg-[#f7f7f7] text-[#000000] hover:bg-[#9333EA] hover:text-[#ffffff]"
+                }`}
+              >
+                <span>{state}</span>
+                {state === value ? (
+                  <CheckIcon className="size-4 shrink-0" aria-hidden="true" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 const inputClassName =
-  "block h-11 w-full rounded-md border border-[#999999] bg-[#f7f7f7] px-3 text-[#000000] outline-none transition-colors placeholder:text-[#666666] focus:border-[#000000] focus:ring-3 focus:ring-[#808080]/40";
+  "block h-11 w-full rounded-md border border-[#999999] bg-[#f7f7f7] px-3 text-[#000000] outline-none transition-colors placeholder:text-[#666666] focus:border-[#9333EA]";
 
 const labelClassName = "block font-extrabold text-[#000000]";
 const requiredClassName = "text-[#4d4d4d]";
 const mutedLinkClassName =
-  "font-semibold text-[#000000] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#4d4d4d]";
+  "font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]";
 
 export default function CreateAccountClient() {
   const router = useRouter();
@@ -196,9 +377,7 @@ export default function CreateAccountClient() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
-  function handleChange(
-    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) {
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { id, type, value } = event.target;
     const checked =
       event.target instanceof HTMLInputElement ? event.target.checked : false;
@@ -209,6 +388,19 @@ export default function CreateAccountClient() {
     }));
 
     setErrors((current) => ({ ...current, [id]: undefined, general: undefined }));
+  }
+
+  function handleStateChange(state: string) {
+    setFormData((current) => ({
+      ...current,
+      state,
+    }));
+
+    setErrors((current) => ({
+      ...current,
+      state: undefined,
+      general: undefined,
+    }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -297,20 +489,7 @@ export default function CreateAccountClient() {
             <label htmlFor="state" className={labelClassName}>
               State: <span className={requiredClassName}>*</span>
             </label>
-            <select
-              id="state"
-              name="state"
-              value={formData.state}
-              onChange={handleChange}
-              className={inputClassName}
-            >
-              <option value="">Please select your state...</option>
-              {states.map((state) => (
-                <option key={state} value={state}>
-                  {state}
-                </option>
-              ))}
-            </select>
+            <StateSelect value={formData.state} onChange={handleStateChange} />
             <FieldError message={errors.state} />
 
             <label htmlFor="email" className={labelClassName}>
@@ -338,7 +517,7 @@ export default function CreateAccountClient() {
             </div>
           </section>
 
-          <section className="flex h-auto w-full flex-col justify-center rounded-md border border-[#999999] bg-[#f7f7f7] p-3 shadow-[0_1px_2px_rgba(0,0,0,0.14)] lg:h-[460px] lg:w-[365px]">
+          <section className="flex h-auto w-full flex-col justify-center rounded-md border border-[#999999] bg-[#f7f7f7] p-3 shadow-[0_1px_2px_rgba(0,0,0,0.14)] [&>*]:-translate-y-1.5 lg:h-[460px] lg:w-[365px]">
             <label htmlFor="password" className={labelClassName}>
               Password <span className={requiredClassName}>*</span> (8 - 12
               characters)
@@ -414,7 +593,7 @@ export default function CreateAccountClient() {
           <button
             type="submit"
             disabled={loading}
-            className="mx-4 w-auto rounded-md border border-[#808080] bg-[#000000] px-12 py-3 text-4xl font-semibold text-[#ffffff] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-colors hover:bg-[#4d4d4d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000] disabled:opacity-60 sm:px-16 lg:px-48 lg:text-[45px]"
+            className="mx-4 w-auto rounded-md border border-[#808080] bg-[#9333EA] px-12 py-3 text-4xl font-semibold text-[#ffffff] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-colors hover:bg-[#7E22CE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000] disabled:opacity-60 sm:px-16 lg:px-48 lg:text-[45px]"
           >
             <span className="flex items-center justify-center gap-2 p-2">
               {loading ? (

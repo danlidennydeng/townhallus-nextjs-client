@@ -1,0 +1,14 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Left section: Blue, 30% (0-120px), outer-left corners rounded -->
+  <path d="M 32,0 L 120,0 L 120,400 L 32,400 A 32,32 0 0 1 0,368 L 0,32 A 32,32 0 0 1 32,0 Z" fill="#2563EB"/>
+
+  <!-- Transparent divider: 30-34% (120-136px) - no rect, shows background -->
+
+  <!-- Middle section: Purple, 32% (136-264px) -->
+  <rect x="136" y="0" width="128" height="400" fill="#9333EA"/>
+
+  <!-- Transparent divider: 66-70% (264-280px) - no rect, shows background -->
+
+  <!-- Right section: Red, 30% (280-400px), outer-right corners rounded -->
+  <path d="M 280,0 L 368,0 A 32,32 0 0 1 400,32 L 400,368 A 32,32 0 0 1 368,400 L 280,400 Z" fill="#DC2626"/>
+</svg>
