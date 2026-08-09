@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,7 +16,14 @@ import {
   SmileIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api-client";
@@ -25,6 +33,7 @@ import {
   mergeStoredUser,
   type TownHallUser,
 } from "@/lib/auth-client";
+import { pixelAvatarPath } from "@/lib/avatar";
 
 type SensitiveInfo = {
   lastname?: string;
@@ -42,6 +51,11 @@ type ProfileFormData = {
 };
 
 type ProfileErrors = Partial<Record<keyof ProfileFormData | "general", string>>;
+
+type DashProfileClientProps = {
+  serverAvatar?: ReactNode;
+  serverAvatarSeed?: string | null;
+};
 
 const initialProfileFormData: ProfileFormData = {
   state: "",
@@ -181,7 +195,10 @@ function StatusBadge({
   );
 }
 
-export default function DashProfileClient() {
+export default function DashProfileClient({
+  serverAvatar,
+  serverAvatarSeed,
+}: Readonly<DashProfileClientProps>) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<TownHallUser | null>(null);
   const [sensitiveInfo, setSensitiveInfo] = useState<SensitiveInfo>({});
@@ -375,16 +392,29 @@ export default function DashProfileClient() {
     );
   }
 
+  const profileAvatar =
+    serverAvatarSeed === currentUser._id && serverAvatar ? (
+      serverAvatar
+    ) : (
+      <Image
+        src={pixelAvatarPath(currentUser._id)}
+        alt={`${currentUser.username || "User"} avatar`}
+        width={128}
+        height={128}
+        priority
+        unoptimized
+        className="size-full object-cover [image-rendering:pixelated]"
+      />
+    );
+
   return (
     <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-4">
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <div className="flex flex-col items-center text-center">
-              <div className="flex size-32 items-center justify-center rounded-full border-2 border-[#9333EA] bg-[#eeeeee] text-5xl font-extrabold text-[#9333EA] shadow-[0_2px_6px_rgba(0,0,0,0.16)]">
-                {(currentUser.firstname || currentUser.username || "T")
-                  .slice(0, 1)
-                  .toUpperCase()}
+              <div className="flex size-32 items-center justify-center overflow-hidden rounded-full border-2 border-[#9333EA] bg-[#eeeeee] shadow-[0_2px_6px_rgba(0,0,0,0.16)]">
+                {profileAvatar}
               </div>
 
               <div className="mt-5 flex items-center justify-center gap-2 text-xl font-semibold text-[#000000]">

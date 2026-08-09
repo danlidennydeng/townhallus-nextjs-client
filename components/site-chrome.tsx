@@ -6,6 +6,7 @@ import {
   HeaderAuthControl,
   HeaderPrimaryActionControl,
 } from "@/components/header-auth-control";
+import { ServerPixelAvatar } from "@/components/server-pixel-avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getAuthUserIdFromCookie } from "@/lib/auth-server";
 
 const footerLinks = [
   { href: "/Game Rules", label: "Game Rules" },
@@ -29,7 +31,17 @@ const footerLinks = [
 export const siteLinkClassName =
   "text-[#000000] underline decoration-[#808080] decoration-2 underline-offset-4 transition-colors hover:text-[#4d4d4d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000]";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const serverUserId = await getAuthUserIdFromCookie();
+  const serverAvatar = serverUserId ? (
+    <ServerPixelAvatar
+      seed={serverUserId}
+      alt=""
+      size={40}
+      className="size-full object-cover [image-rendering:pixelated]"
+    />
+  ) : null;
+
   return (
     <header className="sticky top-0 z-30 border-b border-[#c4c4c4] bg-[#eeeeee]/95 shadow-[0_1px_2px_rgba(0,0,0,0.18)] backdrop-blur">
       <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap sm:px-6 lg:px-8">
@@ -89,10 +101,13 @@ export function SiteHeader() {
         >
           <ul className="flex flex-wrap items-center gap-2 text-sm font-medium sm:flex-nowrap">
             <li>
-              <HeaderPrimaryActionControl />
+              <HeaderPrimaryActionControl serverUserId={serverUserId} />
             </li>
             <li>
-              <HeaderAuthControl />
+              <HeaderAuthControl
+                serverAvatar={serverAvatar}
+                serverAvatarSeed={serverUserId}
+              />
             </li>
           </ul>
         </nav>
