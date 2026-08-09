@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronDownIcon, MenuIcon } from "lucide-react";
 
+import {
+  HeaderAuthControl,
+  HeaderPrimaryActionControl,
+} from "@/components/header-auth-control";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,11 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const headerLinks = [
-  { href: "/create-account", label: "Create Account", variant: "default" },
-  { href: "/log-in", label: "Log In", variant: "outline" },
-] as const;
 
 const footerLinks = [
   { href: "/Game Rules", label: "Game Rules" },
@@ -89,23 +88,12 @@ export function SiteHeader() {
           className="w-full max-w-[22rem] min-w-0 sm:ml-auto sm:w-auto sm:max-w-none"
         >
           <ul className="flex flex-wrap items-center gap-2 text-sm font-medium sm:flex-nowrap">
-            {headerLinks.map((link) => (
-              <li key={link.href}>
-                <Button
-                  nativeButton={false}
-                  render={<Link href={link.href} />}
-                  variant={link.variant}
-                  size="lg"
-                  className={
-                    link.variant === "default"
-                      ? "h-10 bg-[#9333EA] px-4 text-[#ffffff] hover:bg-[#7E22CE]"
-                      : "h-10 border-[#9333EA] bg-transparent px-4 text-[#000000] hover:bg-[#d6d6d6]"
-                  }
-                >
-                  {link.label}
-                </Button>
-              </li>
-            ))}
+            <li>
+              <HeaderPrimaryActionControl />
+            </li>
+            <li>
+              <HeaderAuthControl />
+            </li>
           </ul>
         </nav>
       </div>

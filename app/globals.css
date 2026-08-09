@@ -131,3 +131,17 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  button:not(:disabled):not([role="option"]):hover,
+  [data-slot="button"]:not([data-disabled]):hover {
+    background-color: #ffffff !important;
+    border-color: #9333EA !important;
+    color: #9333EA !important;
+  }
+
+  button:not(:disabled):not([role="option"]):hover svg,
+  [data-slot="button"]:not([data-disabled]):hover svg {
+    color: #9333EA !important;
+  }
+}
