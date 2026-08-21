@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import {
   ChangeEvent,
+  ClipboardEvent,
   FormEvent,
   useEffect,
   useMemo,
@@ -33,10 +35,11 @@ import {
 } from "platejs/react";
 import { BoldPlugin, ItalicPlugin } from "@platejs/basic-nodes/react";
 import { LinkPlugin } from "@platejs/link/react";
-import { LinkRules, upsertLink } from "@platejs/link";
+import { LinkRules } from "@platejs/link";
 
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api-client";
+import { pixelAvatarPath } from "@/lib/avatar";
 import {
   getStoredUserSnapshot,
   mergeStoredUser,
@@ -64,14 +67,25 @@ type PlateContentNode = {
   target?: string;
   type?: string;
   url?: string;
+  videoId?: string;
 };
 
 type PlateNode = PlateContentNode | PlateTextNode;
 
 const titleMaxLength = 280;
 const contentMaxLength = 20000;
+const externalLinkLimit = 1;
 const initialEditorValue: Value = [{ type: "p", children: [{ text: "" }] }];
 const serverAuthSnapshot = "__townhallus_server_auth_snapshot__";
+const imageUrlPattern =
+  /\.(?:apng|avif|gif|jpe?g|png|svg|webp)(?:[?#].*)?$/i;
+const youtubeVideoIdPattern = /^[a-zA-Z0-9_-]{11}$/;
+const youtubeHosts = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+]);
 
 const inputClassName =
   "block w-full rounded-md border border-[#999999] bg-[#f7f7f7] px-3 text-[#000000] outline-none transition-colors placeholder:text-[#666666] focus:border-[#9333EA]";
@@ -96,6 +110,7 @@ const linkKinds: Array<{
 function LinkElement(props: PlateElementProps) {
   const element = props.element as PlateContentNode;
   const href = isSafeExternalUrl(element.url) ? element.url : undefined;
+  const linkKind = href ? getPlateLinkKind(element) : undefined;
 
   return (
     <PlateElement
@@ -103,7 +118,9 @@ function LinkElement(props: PlateElementProps) {
       {...props}
       attributes={{
         ...props.attributes,
+        "data-link-kind": linkKind,
         href,
+        rel: "noopener noreferrer",
         target: "_blank",
       }}
       className="text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4"
@@ -155,6 +172,38 @@ function ImageElement(props: PlateElementProps) {
   );
 }
 
+function VideoElement(props: PlateElementProps) {
+  const element = props.element as PlateContentNode;
+  const embedUrl = getYoutubeEmbedUrl(element.url);
+  const title = element.alt?.trim() || "External video";
+
+  return (
+    <PlateElement {...props} className="my-3">
+      <div
+        contentEditable={false}
+        className="overflow-hidden rounded-md border border-[#999999] bg-[#000000] shadow-[0_1px_2px_rgba(0,0,0,0.14)]"
+      >
+        {embedUrl ? (
+          <iframe
+            src={embedUrl}
+            title={title}
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="block aspect-video w-full"
+          />
+        ) : (
+          <div className="bg-[#f7f7f7] px-3 py-4 text-sm font-semibold text-[#4d4d4d]">
+            Video link unavailable.
+          </div>
+        )}
+      </div>
+      {props.children}
+    </PlateElement>
+  );
+}
+
 const ExternalImagePlugin = createPlatePlugin({
   key: "image",
   node: {
@@ -163,6 +212,17 @@ const ExternalImagePlugin = createPlatePlugin({
   },
   render: {
     node: ImageElement,
+  },
+});
+
+const ExternalVideoPlugin = createPlatePlugin({
+  key: "video",
+  node: {
+    isElement: true,
+    isVoid: true,
+  },
+  render: {
+    node: VideoElement,
   },
 });
 
@@ -179,17 +239,151 @@ function isTextNode(node: PlateNode): node is PlateTextNode {
   return "text" in node;
 }
 
-function isSafeExternalUrl(value?: string) {
+function getSafeExternalUrl(value?: string) {
   if (!value) {
-    return false;
+    return null;
   }
 
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:";
+    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+function isSafeExternalUrl(value?: string) {
+  return getSafeExternalUrl(value) !== null;
+}
+
+function getYoutubeVideoId(value?: string) {
+  const url = getSafeExternalUrl(value);
+
+  if (!url || !youtubeHosts.has(url.hostname.toLowerCase())) {
+    return null;
+  }
+
+  const pathParts = url.pathname.split("/").filter(Boolean);
+  const videoId =
+    url.hostname.toLowerCase() === "youtu.be"
+      ? pathParts[0]
+      : url.searchParams.get("v") ||
+        (["embed", "live", "shorts"].includes(pathParts[0])
+          ? pathParts[1]
+          : null);
+
+  return videoId && youtubeVideoIdPattern.test(videoId) ? videoId : null;
+}
+
+function isYoutubeUrl(value?: string) {
+  const url = getSafeExternalUrl(value);
+  return url ? youtubeHosts.has(url.hostname.toLowerCase()) : false;
+}
+
+function isYoutubeVideoUrl(value?: string) {
+  return getYoutubeVideoId(value) !== null;
+}
+
+function getYoutubeEmbedUrl(value?: string) {
+  const videoId = getYoutubeVideoId(value);
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+}
+
+function isLikelyImageUrl(value?: string) {
+  const url = getSafeExternalUrl(value);
+  return url ? imageUrlPattern.test(url.pathname) : false;
+}
+
+function normalizeLinkKind(value?: string) {
+  return value === "image" || value === "document" || value === "video"
+    ? value
+    : null;
+}
+
+function getPlateLinkKind(node: PlateContentNode): LinkKind {
+  const declaredKind = normalizeLinkKind(node.linkKind);
+
+  if (declaredKind === "image" || isLikelyImageUrl(node.url)) {
+    return "image";
+  }
+
+  if (declaredKind === "video" || isYoutubeUrl(node.url)) {
+    return "video";
+  }
+
+  return "document";
+}
+
+function createExternalLinkCounts(): Record<LinkKind, number> {
+  return {
+    document: 0,
+    image: 0,
+    video: 0,
+  };
+}
+
+function getExternalLinkCounts(nodes: Value | PlateNode[] = []) {
+  const counts = createExternalLinkCounts();
+
+  function visit(currentNodes: Value | PlateNode[]) {
+    currentNodes.forEach((node) => {
+      const plateNode = node as PlateNode;
+
+      if (isTextNode(plateNode)) {
+        return;
+      }
+
+      if (plateNode.type === "image" && isSafeExternalUrl(plateNode.url)) {
+        counts.image += 1;
+      } else if (
+        plateNode.type === "video" &&
+        isSafeExternalUrl(plateNode.url)
+      ) {
+        counts.video += 1;
+      } else if (plateNode.type === "a" && isSafeExternalUrl(plateNode.url)) {
+        counts[getPlateLinkKind(plateNode)] += 1;
+      }
+
+      visit((plateNode.children || []) as Value);
+    });
+  }
+
+  visit(nodes);
+
+  return counts;
+}
+
+function getExternalLinkLimitMessage(kind: LinkKind) {
+  return `Only one external ${kind} link is allowed.`;
+}
+
+function getPlateMediaPolicyError(value: Value) {
+  const counts = getExternalLinkCounts(value);
+  const overLimitKind = linkKinds.find(
+    (kind) => counts[kind.id] > externalLinkLimit
+  );
+
+  if (overLimitKind) {
+    return getExternalLinkLimitMessage(overLimitKind.id);
+  }
+
+  const hasInvalidVideoLink = (value as PlateNode[]).some(function visit(node) {
+    if (isTextNode(node)) {
+      return false;
+    }
+
+    if (
+      (node.type === "video" ||
+        (node.type === "a" && getPlateLinkKind(node) === "video")) &&
+      !isYoutubeVideoUrl(node.url)
+    ) {
+      return true;
+    }
+
+    return (node.children || []).some(visit);
+  });
+
+  return hasInvalidVideoLink ? "Video links must be YouTube video URLs." : null;
 }
 
 function getPlainText(nodes: Value | PlateNode[] = []): string {
@@ -218,6 +412,10 @@ function hasSerializableContent(nodes: Value | PlateNode[] = []): boolean {
       return true;
     }
 
+    if (plateNode.type === "video" && isYoutubeVideoUrl(plateNode.url)) {
+      return true;
+    }
+
     return hasSerializableContent((plateNode.children || []) as Value);
   });
 }
@@ -242,7 +440,11 @@ function serializeInlineNode(node: PlateNode): string {
   const safeUrl = node.url;
 
   if (node.type === "a" && safeUrl && isSafeExternalUrl(safeUrl)) {
-    return `<a href="${escapeHtml(safeUrl)}" target="_blank">${
+    const linkKind = getPlateLinkKind(node);
+
+    return `<a href="${escapeHtml(
+      safeUrl
+    )}" target="_blank" rel="noopener noreferrer" data-link-kind="${linkKind}">${
       children || escapeHtml(safeUrl)
     }</a>`;
   }
@@ -259,9 +461,17 @@ function serializeBlockNode(node: PlateNode): string {
 
   if (node.type === "image" && imageUrl && isSafeExternalUrl(imageUrl)) {
     const safeUrl = escapeHtml(imageUrl);
-    const label = escapeHtml(node.alt?.trim() || imageUrl);
+    const alt = escapeHtml(node.alt?.trim() || "External image");
 
-    return `<p><a href="${safeUrl}" target="_blank">${label}</a></p>`;
+    return `<figure><img src="${safeUrl}" alt="${alt}" loading="lazy" referrerpolicy="no-referrer" /></figure>`;
+  }
+
+  if (node.type === "video" && imageUrl && isYoutubeVideoUrl(imageUrl)) {
+    const safeEmbedUrl = escapeHtml(getYoutubeEmbedUrl(imageUrl) || "");
+    const safeSourceUrl = escapeHtml(imageUrl);
+    const title = escapeHtml(node.alt?.trim() || "External video");
+
+    return `<figure><iframe src="${safeEmbedUrl}" title="${title}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen data-link-kind="video" data-source-url="${safeSourceUrl}"></iframe></figure>`;
   }
 
   const children = (node.children || []).map(serializeInlineNode).join("");
@@ -286,6 +496,23 @@ async function readResponseMessage(response: Response) {
   }
 }
 
+async function validateExternalImageUrl(url: string) {
+  const response = await fetch(apiUrl("/post/validate-image-link"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!response.ok) {
+    return (
+      (await readResponseMessage(response)) || "Image link could not be validated."
+    );
+  }
+
+  return null;
+}
+
 function Notice({
   message,
 }: Readonly<{
@@ -297,15 +524,32 @@ function Notice({
 
   return (
     <div
-      className="flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 text-[#000000]"
+      className="flex items-start gap-2 rounded-md border border-[#B91C1C] bg-[#eeeeee] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
       aria-live="polite"
     >
       <TriangleAlertIcon
-        className="mt-0.5 size-4 shrink-0 text-[#4d4d4d]"
+        className="mt-0.5 size-4 shrink-0 text-[#B91C1C]"
         aria-hidden="true"
       />
       <span>{message}</span>
     </div>
+  );
+}
+
+function StatusBadge({
+  label,
+  title,
+  rounded = "full",
+}: Readonly<{ label: string; title: string; rounded?: "full" | "md" }>) {
+  return (
+    <span
+      title={title}
+      className={`flex size-7 items-center justify-center border-2 border-[#9333EA] text-sm font-bold text-[#9333EA] ${
+        rounded === "full" ? "rounded-full" : "rounded-md"
+      }`}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -316,6 +560,7 @@ export default function CreatePostClient() {
   const [statewideScope, setStatewideScope] = useState(true);
   const [errors, setErrors] = useState<CreatePostErrors>({});
   const [loading, setLoading] = useState(false);
+  const [validatingLink, setValidatingLink] = useState(false);
   const [linkKind, setLinkKind] = useState<LinkKind | null>(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkText, setLinkText] = useState("");
@@ -325,6 +570,7 @@ export default function CreatePostClient() {
       BoldPlugin,
       ItalicPlugin,
       ExternalImagePlugin,
+      ExternalVideoPlugin,
       LinkPlugin.configure({
         inputRules: [
           LinkRules.markdown(),
@@ -332,6 +578,12 @@ export default function CreatePostClient() {
           LinkRules.autolink({ variant: "space" }),
           LinkRules.autolink({ variant: "break" }),
         ],
+        options: {
+          isUrl: (text) =>
+            isSafeExternalUrl(text) &&
+            !isLikelyImageUrl(text) &&
+            !isYoutubeUrl(text),
+        },
         render: {
           node: LinkElement,
         },
@@ -403,6 +655,27 @@ export default function CreatePostClient() {
     0,
     contentMaxLength - contentPlainText.length
   );
+  const externalLinkCounts = useMemo(
+    () => getExternalLinkCounts(contentValue),
+    [contentValue]
+  );
+  const statusBadges = [
+    currentUser?.isVoter
+      ? { label: "V", title: "U.S. Voter Verified", rounded: "full" as const }
+      : null,
+    currentUser?.isCitizen
+      ? { label: "Z", title: "U.S. Citizen Verified", rounded: "full" as const }
+      : null,
+    currentUser?.isAdmin
+      ? { label: "A", title: "Administrator", rounded: "full" as const }
+      : null,
+    currentUser?.isPoster
+      ? { label: "P", title: "Post or Publish Privilege", rounded: "md" as const }
+      : null,
+    currentUser?.isCommenter
+      ? { label: "C", title: "Comment Privilege", rounded: "md" as const }
+      : null,
+  ].filter(Boolean);
   const selectedState = currentUser?.state?.trim() || "";
   const storedScope = statewideScope && selectedState ? selectedState : "Nationwide";
 
@@ -441,6 +714,15 @@ export default function CreatePostClient() {
   }
 
   function openLinkPanel(kind: LinkKind) {
+    if (externalLinkCounts[kind] >= externalLinkLimit) {
+      setErrors((current) => ({
+        ...current,
+        link: getExternalLinkLimitMessage(kind),
+        general: undefined,
+      }));
+      return;
+    }
+
     setLinkKind(kind);
     setLinkUrl("");
     setLinkText(
@@ -453,9 +735,67 @@ export default function CreatePostClient() {
     setErrors((current) => ({ ...current, link: undefined, general: undefined }));
   }
 
-  function insertExternalLink() {
+  function insertExternalVideoNode(cleanUrl: string, cleanText = "External video") {
+    const videoId = getYoutubeVideoId(cleanUrl);
+
+    if (!videoId) {
+      return false;
+    }
+
+    editor.tf.insertNodes([
+      {
+        alt: cleanText,
+        children: [{ text: "" }],
+        type: "video",
+        url: cleanUrl,
+        videoId,
+      },
+      {
+        children: [{ text: "" }],
+        type: "p",
+      },
+    ] as never);
+    setContentValue(editor.children as Value);
+    return true;
+  }
+
+  function handleContentPaste(event: ClipboardEvent<HTMLDivElement>) {
+    const pastedText = event.clipboardData.getData("text/plain").trim();
+
+    if (!isYoutubeVideoUrl(pastedText)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const currentCounts = getExternalLinkCounts(editor.children as Value);
+
+    if (currentCounts.video >= externalLinkLimit) {
+      setErrors((current) => ({
+        ...current,
+        content: getExternalLinkLimitMessage("video"),
+        general: undefined,
+      }));
+      return;
+    }
+
+    insertExternalVideoNode(pastedText);
+    setErrors((current) => ({
+      ...current,
+      content: undefined,
+      general: undefined,
+      link: undefined,
+    }));
+  }
+
+  async function insertExternalLink() {
+    if (!linkKind) {
+      return;
+    }
+
     const cleanUrl = linkUrl.trim();
     const cleanText = linkText.trim();
+    const currentCounts = getExternalLinkCounts(editor.children as Value);
 
     if (!isSafeExternalUrl(cleanUrl)) {
       setErrors((current) => ({
@@ -465,7 +805,62 @@ export default function CreatePostClient() {
       return;
     }
 
+    if (currentCounts[linkKind] >= externalLinkLimit) {
+      setErrors((current) => ({
+        ...current,
+        link: getExternalLinkLimitMessage(linkKind),
+      }));
+      return;
+    }
+
+    if (linkKind === "video" && !isYoutubeVideoUrl(cleanUrl)) {
+      setErrors((current) => ({
+        ...current,
+        link: "Video links must be YouTube video URLs.",
+      }));
+      return;
+    }
+
+    if (linkKind !== "video" && isYoutubeUrl(cleanUrl)) {
+      setErrors((current) => ({
+        ...current,
+        link: "Use the video link button for YouTube video URLs.",
+      }));
+      return;
+    }
+
+    if (linkKind !== "image" && isLikelyImageUrl(cleanUrl)) {
+      setErrors((current) => ({
+        ...current,
+        link: "Use the image link button for image URLs.",
+      }));
+      return;
+    }
+
     if (linkKind === "image") {
+      setValidatingLink(true);
+      setErrors((current) => ({ ...current, link: undefined }));
+
+      try {
+        const imageValidationError = await validateExternalImageUrl(cleanUrl);
+
+        if (imageValidationError) {
+          setErrors((current) => ({
+            ...current,
+            link: imageValidationError,
+          }));
+          return;
+        }
+      } catch {
+        setErrors((current) => ({
+          ...current,
+          link: "Image link could not be validated.",
+        }));
+        return;
+      } finally {
+        setValidatingLink(false);
+      }
+
       editor.tf.insertNodes([
         {
           alt: cleanText || "External image",
@@ -490,12 +885,31 @@ export default function CreatePostClient() {
       return;
     }
 
-    upsertLink(editor, {
-      insertTextInLink: true,
-      target: "_blank",
-      text: cleanText || cleanUrl,
-      url: cleanUrl,
-    });
+    if (linkKind === "video") {
+      insertExternalVideoNode(cleanUrl, cleanText || "External video");
+      setLinkKind(null);
+      setLinkUrl("");
+      setLinkText("");
+      setErrors((current) => ({
+        ...current,
+        link: undefined,
+        general: undefined,
+      }));
+      return;
+    }
+
+    editor.tf.insertNodes([
+      {
+        children: [{ text: cleanText || cleanUrl }],
+        linkKind,
+        target: "_blank",
+        type: "a",
+        url: cleanUrl,
+      },
+      {
+        text: " ",
+      },
+    ] as never);
 
     setContentValue(editor.children as Value);
     setLinkKind(null);
@@ -527,6 +941,12 @@ export default function CreatePostClient() {
     } else if (contentHtml.length > contentMaxLength) {
       fieldErrors.content =
         "Content markup is too long. Please shorten the post body.";
+    } else {
+      const mediaPolicyError = getPlateMediaPolicyError(contentValue);
+
+      if (mediaPolicyError) {
+        fieldErrors.content = mediaPolicyError;
+      }
     }
 
     if (statewideScope && !selectedState) {
@@ -689,6 +1109,8 @@ export default function CreatePostClient() {
                 <span className="mx-1 h-7 w-px bg-[#c4c4c4]" aria-hidden="true" />
                 {linkKinds.map((kind) => {
                   const Icon = kind.icon;
+                  const isLinkKindAtLimit =
+                    externalLinkCounts[kind.id] >= externalLinkLimit;
 
                   return (
                     <Button
@@ -697,7 +1119,12 @@ export default function CreatePostClient() {
                       variant="outline"
                       size="icon"
                       aria-label={`Add ${kind.label.toLowerCase()} link`}
-                      title={`Add ${kind.label.toLowerCase()} link`}
+                      title={
+                        isLinkKindAtLimit
+                          ? getExternalLinkLimitMessage(kind.id)
+                          : `Add ${kind.label.toLowerCase()} link`
+                      }
+                      disabled={isLinkKindAtLimit}
                       onClick={() => openLinkPanel(kind.id)}
                       className="size-9 border-[#9333EA] bg-transparent text-[#000000]"
                     >
@@ -716,6 +1143,7 @@ export default function CreatePostClient() {
                     <input
                       type="url"
                       autoComplete="off"
+                      disabled={validatingLink}
                       value={linkUrl}
                       onChange={(event) => {
                         setLinkUrl(event.target.value);
@@ -730,6 +1158,7 @@ export default function CreatePostClient() {
                     </span>
                     <input
                       type="text"
+                      disabled={validatingLink}
                       placeholder={
                         linkKind === "image" ? "Optional alt text" : undefined
                       }
@@ -741,15 +1170,25 @@ export default function CreatePostClient() {
                   <div className="flex items-end gap-2">
                     <Button
                       type="button"
+                      disabled={validatingLink}
+                      aria-busy={validatingLink}
                       onClick={insertExternalLink}
                       className="h-10 border border-[#9333EA] bg-[#9333EA] text-[#ffffff]"
                     >
-                      <LinkIcon className="size-4" aria-hidden="true" />
-                      Insert
+                      {validatingLink ? (
+                        <LoaderCircleIcon
+                          className="size-4 animate-spin"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <LinkIcon className="size-4" aria-hidden="true" />
+                      )}
+                      {validatingLink ? "Checking..." : "Insert"}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
+                      disabled={validatingLink}
                       onClick={() => setLinkKind(null)}
                       className="h-10 border-[#9333EA] bg-transparent text-[#000000]"
                     >
@@ -774,6 +1213,7 @@ export default function CreatePostClient() {
                 }}
               >
                 <PlateContent
+                  onPaste={handleContentPaste}
                   placeholder="Optional. Long-form post body, external links, and supporting context."
                   className="min-h-[360px] px-4 py-3 text-base leading-7 text-[#000000] outline-none focus:outline-none [&_[data-slate-placeholder=true]]:text-[#666666] [&_a]:text-[#9333EA] [&_a]:underline [&_strong]:font-bold"
                   style={{ minHeight: 320 }}
@@ -789,8 +1229,7 @@ export default function CreatePostClient() {
 
         <aside className="space-y-4">
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-            <p className={mutedTextClassName}>Scope</p>
-            <fieldset className="mt-3">
+            <fieldset>
               <legend className="font-semibold text-[#000000]">
                 Statewide scope
               </legend>
@@ -817,13 +1256,7 @@ export default function CreatePostClient() {
 
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex justify-between gap-3 border-t border-[#c4c4c4] pt-3">
-                <dt className="font-semibold text-[#000000]">Your state</dt>
-                <dd className="font-semibold text-[#000000]">
-                  {selectedState || "Unavailable"}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="font-semibold text-[#000000]">Stored scope</dt>
+                <dt className="font-semibold text-[#000000]">Publish to</dt>
                 <dd className="font-semibold text-[#9333EA]">{storedScope}</dd>
               </div>
             </dl>
@@ -835,13 +1268,33 @@ export default function CreatePostClient() {
 
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <p className={mutedTextClassName}>Author</p>
-            <p className="mt-1 break-words text-lg font-semibold text-[#000000]">
-              @{currentUser.username || "anonymous"}
+            <p className="mt-1 flex items-center gap-2 text-lg font-semibold text-[#000000]">
+              <span className="flex size-6 shrink-0 overflow-hidden rounded-full border border-[#9333EA] bg-[#eeeeee]">
+                <Image
+                  src={pixelAvatarPath(currentUser._id)}
+                  alt=""
+                  width={24}
+                  height={24}
+                  unoptimized
+                  className="size-full object-cover [image-rendering:pixelated]"
+                />
+              </span>
+              <span className="min-w-0 break-words">
+                @{currentUser.username || "anonymous"}
+              </span>
             </p>
-            <p className="mt-2 text-sm leading-6 text-[#4d4d4d]">
-              Posts are published through the Express API and stored in MongoDB
-              under your account.
-            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {statusBadges.map((badge) =>
+                badge ? (
+                  <StatusBadge
+                    key={badge.label}
+                    label={badge.label}
+                    title={badge.title}
+                    rounded={badge.rounded}
+                  />
+                ) : null
+              )}
+            </div>
             <Link href="/dashprofile" className={`mt-3 block ${accentLinkClassName}`}>
               Review profile
             </Link>
