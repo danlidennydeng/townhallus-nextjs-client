@@ -33,7 +33,29 @@ export function getStoredUser() {
     return null;
   }
 
-  const rawUser = window.localStorage.getItem(userStorageKey);
+  const rawUser = getStoredUserSnapshot();
+  if (!rawUser) {
+    return null;
+  }
+
+  const parsedUser = parseStoredUserSnapshot(rawUser);
+
+  if (!parsedUser) {
+    window.localStorage.removeItem(userStorageKey);
+  }
+
+  return parsedUser;
+}
+
+export function getStoredUserSnapshot() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(userStorageKey);
+}
+
+export function parseStoredUserSnapshot(rawUser: string | null) {
   if (!rawUser) {
     return null;
   }
@@ -41,7 +63,6 @@ export function getStoredUser() {
   try {
     return JSON.parse(rawUser) as TownHallUser;
   } catch {
-    window.localStorage.removeItem(userStorageKey);
     return null;
   }
 }
