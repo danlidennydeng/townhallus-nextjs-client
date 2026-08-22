@@ -428,7 +428,7 @@ export default async function PostPage({
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
       <SiteHeader />
       <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="mx-auto grid w-full max-w-[1280px] gap-6 lg:grid-cols-[minmax(0,840px)_420px] lg:gap-5">
           <article className="min-w-0 rounded-md border border-[#999999] bg-[#f7f7f7] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <header className="border-b border-[#c4c4c4] p-4 sm:p-6">
               <Link

@@ -409,7 +409,7 @@ export default function DashProfileClient({
 
   return (
     <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-      <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[360px_1fr]">
+      <div className="mx-auto grid w-full max-w-[1280px] gap-6 lg:grid-cols-[420px_minmax(0,840px)] lg:gap-5">
         <aside className="space-y-4">
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <div className="flex flex-col items-center text-center">

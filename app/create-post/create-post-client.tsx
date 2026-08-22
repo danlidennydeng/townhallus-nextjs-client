@@ -1007,7 +1007,7 @@ export default function CreatePostClient() {
       <form
         noValidate
         onSubmit={handleSubmit}
-        className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+        className="mx-auto grid w-full max-w-[1280px] gap-6 lg:grid-cols-[minmax(0,840px)_420px] lg:gap-5"
       >
         <section className="min-w-0 rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)] sm:p-5">
           <div className="border-b border-[#c4c4c4] pb-4">
