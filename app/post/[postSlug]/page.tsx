@@ -4,12 +4,12 @@ import {
   CalendarDaysIcon,
   Clock3Icon,
   FileTextIcon,
-  MessageSquareIcon,
 } from "lucide-react";
 
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { ServerPixelAvatar } from "@/components/server-pixel-avatar";
 import { serverApiUrl } from "@/lib/api-server";
+import CommentsSection from "./comments-section";
 import PostDeleteButton from "./post-delete-button";
 
 export const dynamic = "force-dynamic";
@@ -496,21 +496,10 @@ export default async function PostPage({
                 __html: contentHtml,
               }}
             />
+            <CommentsSection postId={post._id} postSlug={post.slug} />
           </article>
 
           <aside className="space-y-4">
-            <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-              <div className="flex items-center gap-2">
-                <MessageSquareIcon className="size-5 text-[#9333EA]" />
-                <h2 className="text-lg font-semibold text-[#000000]">Comments</h2>
-              </div>
-              <div className="mt-4 space-y-3">
-                <div className="h-16 rounded-md border border-[#c4c4c4] bg-[#eeeeee]" />
-                <div className="h-12 rounded-md border border-[#c4c4c4] bg-[#eeeeee]" />
-                <div className="h-12 rounded-md border border-[#c4c4c4] bg-[#eeeeee]" />
-              </div>
-            </section>
-
             <section className="rounded-md border border-[#999999] bg-[#eeeeee] p-4">
               <h2 className="text-lg font-semibold text-[#000000]">Recent Posts</h2>
               <div className="mt-4 grid gap-3">
