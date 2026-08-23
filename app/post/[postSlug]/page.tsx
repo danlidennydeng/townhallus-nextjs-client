@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowLeftIcon,
-  ArrowRightIcon,
   CalendarDaysIcon,
   FileTextIcon,
   ImageIcon,
@@ -386,14 +385,11 @@ function RecentPostCard({ post }: Readonly<{ post: TownHallPost }>) {
 
   return (
     <article className="flex min-h-[430px] flex-col overflow-hidden rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)] sm:min-h-[430px] md:min-h-[370px] lg:h-[570px] lg:min-h-[570px]">
-      <div className="flex items-center justify-between gap-3">
-        <Link
-          href={`/post/${post.slug}`}
-          className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
-        >
-          <ArrowRightIcon className="size-4" aria-hidden="true" />
-          {getReadingTime(post.content)}
-        </Link>
+      <div className="flex items-center justify-between gap-3 border-b border-[#c4c4c4] pb-3">
+        <span className="inline-flex items-center gap-1.5 text-sm text-[#4d4d4d]">
+          <CalendarDaysIcon className="size-4" aria-hidden="true" />
+          {formatDate(post.createdAt)}
+        </span>
         <StateChip state={post.state} />
       </div>
 
@@ -425,7 +421,7 @@ function RecentPostCard({ post }: Readonly<{ post: TownHallPost }>) {
         </div>
       ) : null}
 
-      <div className="mt-5 flex shrink-0 flex-wrap items-end justify-between gap-4 border-t border-[#c4c4c4] pt-4 text-sm">
+      <div className="mt-5 shrink-0 border-t border-[#c4c4c4] pt-4 text-sm">
         <div className="flex min-w-0 items-center gap-3">
           {authorId ? (
             <span className="flex size-11 shrink-0 overflow-hidden rounded-full border border-[#9333EA] bg-[#eeeeee] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
@@ -446,14 +442,14 @@ function RecentPostCard({ post }: Readonly<{ post: TownHallPost }>) {
                 <StatusBadge key={badge.label} {...badge} />
               ))}
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[#4d4d4d]">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDaysIcon className="size-4" aria-hidden="true" />
-                {formatDate(post.createdAt)}
-              </span>
-            </div>
           </div>
         </div>
+        <Link
+          href={`/post/${post.slug}`}
+          className="mt-3 flex justify-end text-right text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
+        >
+          {getReadingTime(post.content)}
+        </Link>
       </div>
     </article>
   );
@@ -483,15 +479,28 @@ export default async function PostPage({
         <div className="mx-auto grid w-full max-w-[1280px] items-stretch gap-6 lg:grid-cols-[minmax(0,840px)_420px] lg:gap-5">
           <article className="min-w-0 rounded-md border border-[#999999] bg-[#f7f7f7] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <header className="border-b border-[#c4c4c4] px-4 pb-2 pt-4 sm:px-6 sm:pb-2 sm:pt-6">
-              <div className="flex items-center justify-between gap-3">
-                <Link
-                  href="/"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
-                >
-                  <ArrowLeftIcon className="size-4" aria-hidden="true" />
-                  Home
-                </Link>
-                <StateChip state={post.state} />
+              <div className="flex items-center justify-between gap-3 border-b border-[#c4c4c4] pb-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
+                  >
+                    <ArrowLeftIcon className="size-4" aria-hidden="true" />
+                    Home
+                  </Link>
+                  <span className="inline-flex items-center gap-1.5 text-sm text-[#4d4d4d]">
+                    <CalendarDaysIcon className="size-4" aria-hidden="true" />
+                    {formatDate(post.createdAt)}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <StateChip state={post.state} />
+                  <PostDeleteButton
+                    compact
+                    postAuthorId={authorId}
+                    postId={post._id}
+                  />
+                </div>
               </div>
 
               <h1 className="mt-4 text-3xl font-semibold leading-tight text-[#000000] sm:text-4xl">
@@ -519,17 +528,6 @@ export default async function PostPage({
                       {statusBadges.map((badge) => (
                         <StatusBadge key={badge.label} {...badge} />
                       ))}
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center justify-between gap-3 text-sm text-[#4d4d4d]">
-                      <span className="inline-flex items-center gap-1.5">
-                        <CalendarDaysIcon className="size-4" aria-hidden="true" />
-                        {formatDate(post.createdAt)}
-                      </span>
-                      <PostDeleteButton
-                        compact
-                        postAuthorId={authorId}
-                        postId={post._id}
-                      />
                     </div>
                   </div>
                 </div>

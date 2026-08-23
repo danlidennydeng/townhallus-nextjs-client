@@ -8,6 +8,7 @@ import {
   CircleHelpIcon,
   EyeIcon,
   EyeOffIcon,
+  FileTextIcon,
   LoaderCircleIcon,
   LogOutIcon,
   PenLineIcon,
@@ -487,6 +488,30 @@ export default function DashProfileClient({
               </Button>
             ) : null}
           </section>
+
+          <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className={mutedLabelClassName}>My Posts</p>
+                <p className="font-semibold text-[#000000]">
+                  Review posts published from your account.
+                </p>
+              </div>
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#9333EA] bg-[#eeeeee] text-[#9333EA]">
+                <FileTextIcon className="size-5" aria-hidden="true" />
+              </span>
+            </div>
+
+            <Button
+              nativeButton={false}
+              render={<Link href="/dashpost" />}
+              variant="outline"
+              className="mt-4 w-full border-[#9333EA] bg-transparent text-[#000000] hover:bg-[#d6d6d6]"
+            >
+              <ArrowRightIcon className="size-4" aria-hidden="true" />
+              Open My Posts
+            </Button>
+          </section>
         </aside>
 
         <section className="space-y-6">
@@ -496,18 +521,15 @@ export default function DashProfileClient({
             className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)] sm:p-5"
           >
             <div className="flex flex-col gap-2 border-b border-[#c4c4c4] pb-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className={mutedLabelClassName}>Profile Details</p>
-                <h1 className="text-2xl font-semibold leading-tight text-[#000000]">
-                  Update your TownHallUS profile.
-                </h1>
-              </div>
               {sensitiveLoading ? (
                 <div className="flex items-center gap-2 text-sm text-[#4d4d4d]">
                   <LoaderCircleIcon className="size-4 animate-spin" />
                   Loading private fields
                 </div>
               ) : null}
+              <p className="text-right text-sm font-bold text-[#000000] sm:ml-auto">
+                Profile Details
+              </p>
             </div>
 
             {!currentUser.isVoter ? (

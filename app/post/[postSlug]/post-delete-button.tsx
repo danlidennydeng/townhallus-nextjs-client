@@ -30,12 +30,16 @@ async function readResponseMessage(response: Response) {
 
 export default function PostDeleteButton({
   compact = false,
+  onDeleted,
   postAuthorId,
   postId,
+  redirectTo = "/create-post",
 }: Readonly<{
   compact?: boolean;
+  onDeleted?: () => void;
   postAuthorId: string;
   postId: string;
+  redirectTo?: string | null;
 }>) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -84,7 +88,10 @@ export default function PostDeleteButton({
       }
 
       setOpen(false);
-      router.push("/create-post");
+      onDeleted?.();
+      if (redirectTo) {
+        router.push(redirectTo);
+      }
       router.refresh();
     } catch {
       setError("Post could not be deleted.");

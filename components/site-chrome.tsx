@@ -43,7 +43,7 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#c4c4c4] bg-[#eeeeee]/95 shadow-[0_1px_2px_rgba(0,0,0,0.18)] backdrop-blur">
-      <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-nowrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -96,9 +96,9 @@ export async function SiteHeader() {
 
         <nav
           aria-label="Primary navigation"
-          className="w-full max-w-[22rem] min-w-0 sm:ml-auto sm:w-auto sm:max-w-none"
+          className="ml-auto w-auto shrink-0"
         >
-          <ul className="flex flex-wrap items-center gap-2 text-sm font-medium sm:flex-nowrap">
+          <ul className="flex flex-nowrap items-center gap-2 text-sm font-medium">
             <li>
               <HeaderPrimaryActionControl serverUserId={serverUserId} />
             </li>

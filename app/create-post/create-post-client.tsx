@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeftIcon,
   ArrowRightIcon,
   BoldIcon,
   FileTextIcon,
@@ -39,7 +39,6 @@ import { LinkRules } from "@platejs/link";
 
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api-client";
-import { pixelAvatarPath } from "@/lib/avatar";
 import {
   getStoredUserSnapshot,
   mergeStoredUser,
@@ -91,9 +90,6 @@ const inputClassName =
   "block w-full rounded-md border border-[#999999] bg-[#f7f7f7] px-3 text-[#000000] outline-none transition-colors placeholder:text-[#666666] focus:border-[#9333EA]";
 const labelClassName =
   "flex flex-wrap items-center justify-between gap-2 font-extrabold text-[#000000]";
-const mutedTextClassName = "text-sm text-[#4d4d4d]";
-const accentLinkClassName =
-  "font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 transition-colors hover:text-[#7E22CE]";
 const resetButtonClassName =
   "size-9 shrink-0 border-[#9333EA] bg-transparent text-[#000000]";
 
@@ -536,23 +532,6 @@ function Notice({
   );
 }
 
-function StatusBadge({
-  label,
-  title,
-  rounded = "full",
-}: Readonly<{ label: string; title: string; rounded?: "full" | "md" }>) {
-  return (
-    <span
-      title={title}
-      className={`flex size-7 items-center justify-center border-2 border-[#9333EA] text-sm font-bold text-[#9333EA] ${
-        rounded === "full" ? "rounded-full" : "rounded-md"
-      }`}
-    >
-      {label}
-    </span>
-  );
-}
-
 export default function CreatePostClient() {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -659,23 +638,6 @@ export default function CreatePostClient() {
     () => getExternalLinkCounts(contentValue),
     [contentValue]
   );
-  const statusBadges = [
-    currentUser?.isVoter
-      ? { label: "V", title: "U.S. Voter Verified", rounded: "full" as const }
-      : null,
-    currentUser?.isCitizen
-      ? { label: "Z", title: "U.S. Citizen Verified", rounded: "full" as const }
-      : null,
-    currentUser?.isAdmin
-      ? { label: "A", title: "Administrator", rounded: "full" as const }
-      : null,
-    currentUser?.isPoster
-      ? { label: "P", title: "Post or Publish Privilege", rounded: "md" as const }
-      : null,
-    currentUser?.isCommenter
-      ? { label: "C", title: "Comment Privilege", rounded: "md" as const }
-      : null,
-  ].filter(Boolean);
   const selectedState = currentUser?.state?.trim() || "";
   const storedScope = statewideScope && selectedState ? selectedState : "Nationwide";
 
@@ -1011,10 +973,16 @@ export default function CreatePostClient() {
       >
         <section className="min-w-0 rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)] sm:p-5">
           <div className="border-b border-[#c4c4c4] pb-4">
-            <p className={mutedTextClassName}>Create Post</p>
-            <h1 className="text-2xl font-semibold leading-tight text-[#000000]">
-              Publish a TownHallUS post.
-            </h1>
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href="/dashprofile"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
+              >
+                <ArrowLeftIcon className="size-4" aria-hidden="true" />
+                Profile
+              </Link>
+              <h1 className="text-sm font-bold text-[#000000]">Create Post</h1>
+            </div>
           </div>
 
           <section className="mt-5">
@@ -1266,41 +1234,7 @@ export default function CreatePostClient() {
             </div>
           </section>
 
-          <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-            <p className={mutedTextClassName}>Author</p>
-            <p className="mt-1 flex items-center gap-2 text-lg font-semibold text-[#000000]">
-              <span className="flex size-6 shrink-0 overflow-hidden rounded-full border border-[#9333EA] bg-[#eeeeee]">
-                <Image
-                  src={pixelAvatarPath(currentUser._id)}
-                  alt=""
-                  width={24}
-                  height={24}
-                  unoptimized
-                  className="size-full object-cover [image-rendering:pixelated]"
-                />
-              </span>
-              <span className="min-w-0 break-words">
-                @{currentUser.username || "anonymous"}
-              </span>
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {statusBadges.map((badge) =>
-                badge ? (
-                  <StatusBadge
-                    key={badge.label}
-                    label={badge.label}
-                    title={badge.title}
-                    rounded={badge.rounded}
-                  />
-                ) : null
-              )}
-            </div>
-            <Link href="/dashprofile" className={`mt-3 block ${accentLinkClassName}`}>
-              Review profile
-            </Link>
-          </section>
-
-          <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+          <section className="flex min-h-32 flex-col items-center justify-center rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <Button
               type="submit"
               disabled={loading}
@@ -1313,9 +1247,11 @@ export default function CreatePostClient() {
               {!loading ? <ArrowRightIcon className="size-5" aria-hidden="true" /> : null}
             </Button>
 
-            <div className="mt-3 min-h-10">
-              <Notice message={errors.general} />
-            </div>
+            {errors.general ? (
+              <div className="mt-3 w-full">
+                <Notice message={errors.general} />
+              </div>
+            ) : null}
           </section>
         </aside>
       </form>
