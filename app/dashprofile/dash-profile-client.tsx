@@ -8,7 +8,6 @@ import {
   CircleHelpIcon,
   EyeIcon,
   EyeOffIcon,
-  Gamepad2Icon,
   LoaderCircleIcon,
   LogOutIcon,
   PenLineIcon,
@@ -413,7 +412,7 @@ export default function DashProfileClient({
         <aside className="space-y-4">
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <div className="flex flex-col items-center text-center">
-              <div className="flex size-32 items-center justify-center overflow-hidden rounded-full border-2 border-[#9333EA] bg-[#eeeeee] shadow-[0_2px_6px_rgba(0,0,0,0.16)]">
+              <div className="flex size-32 items-center justify-center overflow-hidden rounded-full border border-[#9333EA] bg-[#eeeeee] shadow-[0_2px_6px_rgba(0,0,0,0.16)]">
                 {profileAvatar}
               </div>
 
@@ -665,39 +664,6 @@ export default function DashProfileClient({
               <Notice message={updateUserSuccess} tone="success" />
             </div>
           </form>
-
-          {currentUser.isPoster ? (
-            <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-              <div className="flex items-center gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-[#9333EA] bg-[#eeeeee]">
-                  <Gamepad2Icon className="size-6 text-[#9333EA]" />
-                </span>
-                <h2 className="text-xl font-semibold text-[#000000]">
-                  SimGov, a Real-time Role-playing Strategy Government
-                  Simulation Game
-                </h2>
-              </div>
-              <p className="mt-4 leading-7 text-[#1f1f1f]">
-                Would you like to take on the role of your{" "}
-                <span className="font-bold text-[#000000]">
-                  state governor, state senator, state assembly member, or state
-                  supreme court judge
-                </span>{" "}
-                and compete against your real-life elected officials?
-              </p>
-              <p className="mt-2 leading-7 text-[#1f1f1f]">
-                If you do, please see the{" "}
-                <Link href="/gamerules" className={accentLinkClassName}>
-                  SimGov game rules
-                </Link>{" "}
-                first, and then let us know{" "}
-                <Link href="/createroleplay" className={accentLinkClassName}>
-                  which roles
-                </Link>{" "}
-                you like to play.
-              </p>
-            </section>
-          ) : null}
         </section>
       </div>
     </main>

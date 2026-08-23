@@ -1,9 +1,11 @@
 import Link from "next/link";
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
   CalendarDaysIcon,
-  Clock3Icon,
   FileTextIcon,
+  ImageIcon,
+  VideoIcon,
 } from "lucide-react";
 
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
@@ -131,10 +133,10 @@ function getReadingTime(content = "") {
     .length;
 
   if (textLength < 1000) {
-    return "A few seconds read";
+    return "Seconds MORE to read";
   }
 
-  return `${Math.max(1, Math.round(textLength / 1000))} min read`;
+  return `${Math.max(1, Math.round(textLength / 1000))} min MORE to read`;
 }
 
 function decodeHtmlAttribute(value = "") {
@@ -369,39 +371,89 @@ function EmptyState() {
 function RecentPostCard({ post }: Readonly<{ post: TownHallPost }>) {
   const authorId = getAuthorId(post);
   const mediaSummary = getMediaSummary(post);
+  const statusBadges = getStatusBadges(getAuthorStatus(post));
+  const mediaIcons = [
+    mediaSummary.videos
+      ? { icon: VideoIcon, label: "Has video" }
+      : null,
+    mediaSummary.images
+      ? { icon: ImageIcon, label: "Has image" }
+      : null,
+    mediaSummary.documents
+      ? { icon: FileTextIcon, label: "Has document" }
+      : null,
+  ].filter(Boolean);
 
   return (
-    <article className="flex min-h-48 flex-col rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-      <div className="flex items-center gap-2 text-sm text-[#4d4d4d]">
-        {authorId ? (
-          <span className="flex size-7 overflow-hidden rounded-full border border-[#9333EA] bg-[#eeeeee]">
-            <ServerPixelAvatar
-              seed={authorId}
-              alt=""
-              size={28}
-              className="size-full object-cover [image-rendering:pixelated]"
-            />
-          </span>
-        ) : null}
-        <span className="min-w-0 truncate font-semibold text-[#000000]">
-          @{post.username || "anonymous"}
-        </span>
-      </div>
-
-      <h3 className="mt-4 line-clamp-3 text-base font-semibold leading-6 text-[#000000]">
-        {post.title || "Untitled post"}
-      </h3>
-
-      <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-sm">
-        <div className="flex gap-2 text-[#9333EA]">
-          {mediaSummary.documents ? <FileTextIcon className="size-4" /> : null}
-        </div>
+    <article className="flex min-h-[430px] flex-col overflow-hidden rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)] sm:min-h-[430px] md:min-h-[370px] lg:h-[570px] lg:min-h-[570px]">
+      <div className="flex items-center justify-between gap-3">
         <Link
           href={`/post/${post.slug}`}
-          className="font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
+          className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
         >
-          Read
+          <ArrowRightIcon className="size-4" aria-hidden="true" />
+          {getReadingTime(post.content)}
         </Link>
+        <StateChip state={post.state} />
+      </div>
+
+      <div className="mt-5 min-h-0 flex-1 overflow-hidden">
+        <h3 className="break-words text-xl font-semibold leading-tight text-[#000000] sm:text-2xl lg:text-[24px]">
+          {post.title || "Untitled post"}
+        </h3>
+      </div>
+
+      {mediaIcons.length > 0 ? (
+        <div className="mt-4 flex shrink-0 flex-wrap items-center gap-2 text-[#9333EA]">
+          {mediaIcons.map((item) => {
+            if (!item) {
+              return null;
+            }
+
+            const Icon = item.icon;
+
+            return (
+              <span
+                key={item.label}
+                title={item.label}
+                className="flex size-9 items-center justify-center rounded-md border border-[#9333EA] bg-transparent text-[#9333EA]"
+              >
+                <Icon className="size-4" aria-hidden="true" />
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <div className="mt-5 flex shrink-0 flex-wrap items-end justify-between gap-4 border-t border-[#c4c4c4] pt-4 text-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          {authorId ? (
+            <span className="flex size-11 shrink-0 overflow-hidden rounded-full border border-[#9333EA] bg-[#eeeeee] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+              <ServerPixelAvatar
+                seed={authorId}
+                alt=""
+                size={44}
+                className="size-full object-cover [image-rendering:pixelated]"
+              />
+            </span>
+          ) : null}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="min-w-0 break-words font-semibold text-[#000000]">
+                @{post.username || "anonymous"}
+              </span>
+              {statusBadges.map((badge) => (
+                <StatusBadge key={badge.label} {...badge} />
+              ))}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[#4d4d4d]">
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarDaysIcon className="size-4" aria-hidden="true" />
+                {formatDate(post.createdAt)}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </article>
   );
@@ -428,25 +480,28 @@ export default async function PostPage({
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
       <SiteHeader />
       <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="mx-auto grid w-full max-w-[1280px] gap-6 lg:grid-cols-[minmax(0,840px)_420px] lg:gap-5">
+        <div className="mx-auto grid w-full max-w-[1280px] items-stretch gap-6 lg:grid-cols-[minmax(0,840px)_420px] lg:gap-5">
           <article className="min-w-0 rounded-md border border-[#999999] bg-[#f7f7f7] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-            <header className="border-b border-[#c4c4c4] p-4 sm:p-6">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
-              >
-                <ArrowLeftIcon className="size-4" aria-hidden="true" />
-                Home
-              </Link>
+            <header className="border-b border-[#c4c4c4] px-4 pb-2 pt-4 sm:px-6 sm:pb-2 sm:pt-6">
+              <div className="flex items-center justify-between gap-3">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
+                >
+                  <ArrowLeftIcon className="size-4" aria-hidden="true" />
+                  Home
+                </Link>
+                <StateChip state={post.state} />
+              </div>
 
               <h1 className="mt-4 text-3xl font-semibold leading-tight text-[#000000] sm:text-4xl">
                 {post.title || "Untitled post"}
               </h1>
 
-              <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="mt-[50px] flex flex-col gap-4 border-t border-[#c4c4c4] pt-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   {authorId ? (
-                    <span className="flex size-11 shrink-0 overflow-hidden rounded-full border-2 border-[#9333EA] bg-[#eeeeee] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+                    <span className="flex size-11 shrink-0 overflow-hidden rounded-full border border-[#9333EA] bg-[#eeeeee] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
                       <ServerPixelAvatar
                         seed={authorId}
                         alt={`${post.username || "User"} avatar`}
@@ -456,7 +511,7 @@ export default async function PostPage({
                       />
                     </span>
                   ) : null}
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="break-words text-lg font-semibold text-[#000000]">
                         @{post.username || "anonymous"}
@@ -465,26 +520,22 @@ export default async function PostPage({
                         <StatusBadge key={badge.label} {...badge} />
                       ))}
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[#4d4d4d]">
+                    <div className="mt-1 flex flex-wrap items-center justify-between gap-3 text-sm text-[#4d4d4d]">
                       <span className="inline-flex items-center gap-1.5">
                         <CalendarDaysIcon className="size-4" aria-hidden="true" />
                         {formatDate(post.createdAt)}
                       </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock3Icon className="size-4" aria-hidden="true" />
-                        {getReadingTime(post.content)}
-                      </span>
+                      <PostDeleteButton
+                        compact
+                        postAuthorId={authorId}
+                        postId={post._id}
+                      />
                     </div>
                   </div>
                 </div>
-
-                <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                  <StateChip state={post.state} />
-                  <PostDeleteButton postAuthorId={authorId} postId={post._id} />
-                </div>
               </div>
 
-              <div className="mt-5 flex flex-col gap-3">
+              <div className="mt-1 flex flex-col gap-3">
                 <LocationChips post={post} />
                 <MediaPills post={post} />
               </div>
@@ -499,8 +550,8 @@ export default async function PostPage({
             <CommentsSection postId={post._id} postSlug={post.slug} />
           </article>
 
-          <aside className="space-y-4">
-            <section className="rounded-md border border-[#999999] bg-[#eeeeee] p-4">
+          <aside className="space-y-4 lg:h-full lg:self-stretch">
+            <section className="rounded-md border border-[#999999] bg-[#eeeeee] p-4 lg:h-full">
               <h2 className="text-lg font-semibold text-[#000000]">Recent Posts</h2>
               <div className="mt-4 grid gap-3">
                 {recentPosts.length > 0 ? (

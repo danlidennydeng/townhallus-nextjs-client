@@ -29,9 +29,11 @@ async function readResponseMessage(response: Response) {
 }
 
 export default function PostDeleteButton({
+  compact = false,
   postAuthorId,
   postId,
 }: Readonly<{
+  compact?: boolean;
   postAuthorId: string;
   postId: string;
 }>) {
@@ -93,20 +95,35 @@ export default function PostDeleteButton({
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        aria-label="Delete post"
-        title="Delete post"
-        onClick={() => {
-          setOpen(true);
-          setError(undefined);
-        }}
-        className="size-10 border-[#B91C1C] bg-transparent text-[#B91C1C]"
-      >
-        <Trash2Icon className="size-5" aria-hidden="true" />
-      </Button>
+      {compact ? (
+        <button
+          type="button"
+          aria-label="Delete post"
+          title="Delete post"
+          onClick={() => {
+            setOpen(true);
+            setError(undefined);
+          }}
+          className="inline-flex items-center text-[#B91C1C] transition-colors hover:text-[#7F1D1D]"
+        >
+          <Trash2Icon className="size-4" aria-hidden="true" />
+        </button>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Delete post"
+          title="Delete post"
+          onClick={() => {
+            setOpen(true);
+            setError(undefined);
+          }}
+          className="size-10 border-[#B91C1C] bg-transparent text-[#B91C1C]"
+        >
+          <Trash2Icon className="size-5" aria-hidden="true" />
+        </Button>
+      )}
 
       {open ? (
         <div

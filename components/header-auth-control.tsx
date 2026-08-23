@@ -61,9 +61,9 @@ export function HeaderPrimaryActionControl({
         size="lg"
         aria-label="Search"
         title="Search"
-        className="size-10 rounded-full border-[#9333EA] bg-transparent p-0 text-[#000000] shadow-[0_1px_1px_rgba(0,0,0,0.14)] hover:bg-[#d6d6d6]"
+        className="size-11 rounded-full border-[#9333EA] bg-transparent p-0 text-[#000000] shadow-[0_1px_1px_rgba(0,0,0,0.14)] hover:bg-[#d6d6d6]"
       >
-        <SearchIcon className="size-5" aria-hidden="true" />
+        <SearchIcon className="size-6" aria-hidden="true" />
       </Button>
     );
   }
@@ -96,8 +96,8 @@ export function HeaderAuthControl({
         <Image
           src={pixelAvatarPath(currentUser._id)}
           alt=""
-          width={40}
-          height={40}
+          width={44}
+          height={44}
           unoptimized
           className="size-full object-cover [image-rendering:pixelated]"
         />
@@ -111,7 +111,7 @@ export function HeaderAuthControl({
         size="lg"
         aria-label={`${displayName} profile`}
         title={`${displayName} profile`}
-        className="size-10 overflow-hidden rounded-full border-[#9333EA] bg-[#eeeeee] p-0 text-base font-semibold text-[#ffffff] shadow-[0_1px_1px_rgba(0,0,0,0.14)] hover:bg-[#7E22CE]"
+        className="size-11 overflow-hidden rounded-full border-[#9333EA] bg-[#eeeeee] p-0 text-base font-semibold text-[#ffffff] shadow-[0_1px_1px_rgba(0,0,0,0.14)] hover:bg-[#7E22CE]"
       >
         {avatar}
       </Button>

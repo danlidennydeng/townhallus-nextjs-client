@@ -19,13 +19,12 @@ import {
 import { getAuthUserIdFromCookie } from "@/lib/auth-server";
 
 const footerLinks = [
-  { href: "/Game Rules", label: "Game Rules" },
+  { href: "/about", label: "About Us" },
+  { href: "/faqpage", label: "FAQ" },
+  { href: "/helppage", label: "Help" },
   { href: "/privacy", label: "Privacy & Cookie" },
   { href: "/terms", label: "Term" },
   { href: "/userrules", label: "User Rules" },
-  { href: "/faqpage", label: "FAQ" },
-  { href: "/helppage", label: "Help" },
-  { href: "/about", label: "About Us" },
 ];
 
 export const siteLinkClassName =
@@ -37,7 +36,7 @@ export async function SiteHeader() {
     <ServerPixelAvatar
       seed={serverUserId}
       alt=""
-      size={40}
+      size={44}
       className="size-full object-cover [image-rendering:pixelated]"
     />
   ) : null;
