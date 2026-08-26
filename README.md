@@ -2,8 +2,21 @@ Codex in VS Code 5.5 extra high
 
 Marterial Design Style.
 shadcn/ui, lucide icons is default
+=========================================
+
+In production, please limit how many posts a user can pubish every 24 hours, and how many comments a user can comments every 24 hours.
+
+=====================================================
+The cards in "Recent Posts" of post page are a little bit proportally small than the cards in dashpost page. Are we going to make the exactly same size in production?
 
 ==============================================
+
+No pragraph in comment so far.
+
+========================================
+
+Perhaps, we should list 1st and 2nd column for the user's own comments in the dashcomment page. List recent 3 post cards on the 3rd column.
+============================================== 
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 

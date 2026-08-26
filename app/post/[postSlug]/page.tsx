@@ -9,6 +9,7 @@ import {
 
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { ServerPixelAvatar } from "@/components/server-pixel-avatar";
+import { StateFlagIcon } from "@/components/state-flag";
 import { serverApiUrl } from "@/lib/api-server";
 import CommentsSection from "./comments-section";
 import PostDeleteButton from "./post-delete-button";
@@ -276,9 +277,13 @@ function StateChip({ state }: Readonly<{ state?: string }>) {
   }
 
   return (
-    <span className="rounded-md border border-[#9333EA] bg-[#eeeeee] px-3 py-1 text-sm font-semibold text-[#9333EA]">
+    <Link
+      href={`/mystate/${encodeURIComponent(state)}`}
+      className="inline-flex items-center gap-1.5 rounded-md border border-[#9333EA] bg-[#eeeeee] px-3 py-1 text-sm font-semibold text-[#9333EA] transition-colors hover:bg-[#d6d6d6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9333EA]"
+    >
+      <StateFlagIcon state={state} />
       {state}
-    </span>
+    </Link>
   );
 }
 

@@ -11,6 +11,7 @@ import {
   FileTextIcon,
   LoaderCircleIcon,
   LogOutIcon,
+  MessageSquareTextIcon,
   PenLineIcon,
   ShieldCheckIcon,
   SmileIcon,
@@ -53,6 +54,8 @@ type ProfileFormData = {
 type ProfileErrors = Partial<Record<keyof ProfileFormData | "general", string>>;
 
 type DashProfileClientProps = {
+  initialTotalComments?: number | null;
+  initialTotalPosts?: number | null;
   serverAvatar?: ReactNode;
   serverAvatarSeed?: string | null;
 };
@@ -73,6 +76,8 @@ const labelClassName = "flex justify-between gap-3 font-extrabold text-[#000000]
 const mutedLabelClassName = "text-sm font-medium text-[#4d4d4d]";
 const accentLinkClassName =
   "font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 transition-colors hover:text-[#7E22CE]";
+const countBadgeClassName =
+  "inline-flex min-w-6 items-center justify-center rounded-md border border-[#9333EA] bg-[#eeeeee] p-px text-sm font-extrabold leading-4 text-[#9333EA] align-middle shadow-[0_1px_1px_rgba(0,0,0,0.08)]";
 const introductionMaxLength = 280;
 
 function formatBirthday(value?: string) {
@@ -196,11 +201,19 @@ function StatusBadge({
 }
 
 export default function DashProfileClient({
+  initialTotalComments,
+  initialTotalPosts,
   serverAvatar,
   serverAvatarSeed,
 }: Readonly<DashProfileClientProps>) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<TownHallUser | null>(null);
+  const [totalComments, setTotalComments] = useState<number | null>(
+    typeof initialTotalComments === "number" ? initialTotalComments : null
+  );
+  const [totalPosts, setTotalPosts] = useState<number | null>(
+    typeof initialTotalPosts === "number" ? initialTotalPosts : null
+  );
   const [sensitiveInfo, setSensitiveInfo] = useState<SensitiveInfo>({});
   const [formData, setFormData] = useState<ProfileFormData>(
     initialProfileFormData
@@ -230,6 +243,88 @@ export default function DashProfileClient({
 
     return () => cancelAnimationFrame(frame);
   }, [router]);
+
+  useEffect(() => {
+    if (!currentUser?._id) {
+      return;
+    }
+
+    let ignore = false;
+    const params = new URLSearchParams({
+      limit: "1",
+      startIndex: "0",
+      userId: currentUser._id,
+    });
+
+    async function fetchPostCount() {
+      try {
+        const response = await fetch(
+          apiUrl(`/post/getposts?${params.toString()}`),
+          {
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { totalPosts?: number };
+        if (!ignore && typeof data.totalPosts === "number") {
+          setTotalPosts(data.totalPosts);
+        }
+      } catch {
+        // Keep the server-provided count if the browser refresh fails.
+      }
+    }
+
+    fetchPostCount();
+
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser?._id]);
+
+  useEffect(() => {
+    if (!currentUser?._id) {
+      return;
+    }
+
+    const userId = currentUser._id;
+    let ignore = false;
+    const params = new URLSearchParams({
+      limit: "1",
+      startIndex: "0",
+    });
+
+    async function fetchCommentCount() {
+      try {
+        const response = await fetch(
+          apiUrl(`/comment/getUserComments/${userId}?${params.toString()}`),
+          {
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { totalComments?: number };
+        if (!ignore && typeof data.totalComments === "number") {
+          setTotalComments(data.totalComments);
+        }
+      } catch {
+        // Keep the server-provided count if the browser refresh fails.
+      }
+    }
+
+    fetchCommentCount();
+
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser?._id]);
 
   useEffect(() => {
     if (!currentUser?._id) {
@@ -287,6 +382,8 @@ export default function DashProfileClient({
     introductionMaxLength - formData.introduction.length
   );
   const birthdayFormatted = formatBirthday(sensitiveInfo.birthday);
+  const commentCount = totalComments ?? 0;
+  const postCount = totalPosts ?? 0;
   const statusBadges = [
     currentUser?.isVoter
       ? { label: "V", title: "U.S. Voter Verified", rounded: "full" as const }
@@ -494,7 +591,8 @@ export default function DashProfileClient({
               <div className="min-w-0">
                 <p className={mutedLabelClassName}>My Posts</p>
                 <p className="font-semibold text-[#000000]">
-                  Review posts published from your account.
+                  <span className={countBadgeClassName}>{postCount}</span>{" "}
+                  posts I have published
                 </p>
               </div>
               <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#9333EA] bg-[#eeeeee] text-[#9333EA]">
@@ -510,6 +608,31 @@ export default function DashProfileClient({
             >
               <ArrowRightIcon className="size-4" aria-hidden="true" />
               Open My Posts
+            </Button>
+          </section>
+
+          <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className={mutedLabelClassName}>My Comments</p>
+                <p className="font-semibold text-[#000000]">
+                  <span className={countBadgeClassName}>{commentCount}</span>{" "}
+                  comments I have made
+                </p>
+              </div>
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#9333EA] bg-[#eeeeee] text-[#9333EA]">
+                <MessageSquareTextIcon className="size-5" aria-hidden="true" />
+              </span>
+            </div>
+
+            <Button
+              nativeButton={false}
+              render={<Link href="/dashcomment" />}
+              variant="outline"
+              className="mt-4 w-full border-[#9333EA] bg-transparent text-[#000000] hover:bg-[#d6d6d6]"
+            >
+              <ArrowRightIcon className="size-4" aria-hidden="true" />
+              Open My Comments
             </Button>
           </section>
         </aside>

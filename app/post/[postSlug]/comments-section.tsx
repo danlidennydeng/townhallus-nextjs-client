@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   LoaderCircleIcon,
-  MessageSquareIcon,
+  MessageSquareTextIcon,
   MessageSquareReplyIcon,
   ThumbsUpIcon,
   Trash2Icon,
@@ -869,7 +869,7 @@ export default function CommentsSection({
     <section className="border-t border-[#c4c4c4] px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <MessageSquareIcon className="size-5 text-[#9333EA]" aria-hidden="true" />
+          <MessageSquareTextIcon className="size-5 text-[#9333EA]" aria-hidden="true" />
           <h2 className="text-xl font-semibold text-[#000000]">Comments</h2>
         </div>
         {totalCommentCount > 0 ? (

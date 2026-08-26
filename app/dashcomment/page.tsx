@@ -1,54 +1,56 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileTextIcon, LogInIcon } from "lucide-react";
+import { LogInIcon, MessageSquareTextIcon } from "lucide-react";
 
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { Button } from "@/components/ui/button";
 import { serverApiUrl } from "@/lib/api-server";
 import { getAuthUserIdFromCookie } from "@/lib/auth-server";
-import DashPostClient, {
-  dashPostPageSize,
-  type DashPostRecord,
-} from "./dash-post-client";
+import DashCommentClient, {
+  dashCommentPageSize,
+  type DashCommentRecord,
+} from "./dash-comment-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "My Posts | TownHallUS.com",
-  description: "Review posts published from your TownHallUS account.",
+  title: "My Comments | TownHallUS.com",
+  description: "Review comments published from your TownHallUS account.",
 };
 
-type PostsResponse = {
-  posts?: DashPostRecord[];
-  totalPosts?: number;
+type CommentsResponse = {
+  comments?: DashCommentRecord[];
+  totalComments?: number;
 };
 
-async function fetchUserPosts(userId: string) {
+async function fetchUserComments(userId: string) {
   const params = new URLSearchParams({
-    limit: String(dashPostPageSize),
+    limit: String(dashCommentPageSize),
     startIndex: "0",
-    userId,
   });
 
   try {
-    const response = await fetch(serverApiUrl(`/post/getposts?${params.toString()}`), {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      serverApiUrl(`/comment/getUserComments/${userId}?${params.toString()}`),
+      { cache: "no-store" }
+    );
 
     if (!response.ok) {
-      return { failed: true, posts: [], totalPosts: 0 };
+      return { comments: [], failed: true, totalComments: 0 };
     }
 
-    const data = (await response.json()) as PostsResponse;
-    const posts = data.posts || [];
+    const data = (await response.json()) as CommentsResponse;
+    const comments = data.comments || [];
+
     return {
+      comments,
       failed: false,
-      posts,
-      totalPosts: typeof data.totalPosts === "number" ? data.totalPosts : posts.length,
+      totalComments:
+        typeof data.totalComments === "number" ? data.totalComments : comments.length,
     };
   } catch {
-    return { failed: true, posts: [], totalPosts: 0 };
+    return { comments: [], failed: true, totalComments: 0 };
   }
 }
 
@@ -59,10 +61,10 @@ function LoginRequired() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <section className="w-full max-w-xl rounded-md border border-[#999999] bg-[#f7f7f7] p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
           <span className="mx-auto flex size-14 items-center justify-center rounded-md border border-[#9333EA] bg-[#eeeeee] text-[#9333EA]">
-            <FileTextIcon className="size-7" aria-hidden="true" />
+            <MessageSquareTextIcon className="size-7" aria-hidden="true" />
           </span>
           <h1 className="mt-4 text-2xl font-semibold text-[#000000]">
-            Log in to view My Posts.
+            Log in to view My Comments.
           </h1>
           <Button
             nativeButton={false}
@@ -79,23 +81,23 @@ function LoginRequired() {
   );
 }
 
-export default async function DashPostPage() {
+export default async function DashCommentPage() {
   const serverUserId = await getAuthUserIdFromCookie();
 
   if (!serverUserId) {
     return <LoginRequired />;
   }
 
-  const { failed, posts, totalPosts } = await fetchUserPosts(serverUserId);
+  const { comments, failed, totalComments } = await fetchUserComments(serverUserId);
 
   return (
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
       <SiteHeader />
-      <DashPostClient
+      <DashCommentClient
+        initialComments={comments}
         initialFetchFailed={failed}
-        initialHasMore={totalPosts > posts.length}
-        initialPosts={posts}
-        initialTotalPosts={totalPosts}
+        initialHasMore={totalComments > comments.length}
+        initialTotalComments={totalComments}
         userId={serverUserId}
       />
       <SiteFooter />

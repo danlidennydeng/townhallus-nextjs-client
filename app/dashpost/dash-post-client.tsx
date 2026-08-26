@@ -14,10 +14,11 @@ import {
   TriangleAlertIcon,
   VideoIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import PostDeleteButton from "@/app/post/[postSlug]/post-delete-button";
 import { Button } from "@/components/ui/button";
+import { StateFlagIcon } from "@/components/state-flag";
 import { apiUrl } from "@/lib/api-client";
 import {
   getStoredUser,
@@ -64,6 +65,7 @@ export type DashPostRecord = {
 
 type PostsResponse = {
   posts?: DashPostRecord[];
+  totalPosts?: number;
 };
 
 type StatusBadgeConfig = {
@@ -76,6 +78,7 @@ type DashPostClientProps = {
   initialFetchFailed?: boolean;
   initialHasMore: boolean;
   initialPosts: DashPostRecord[];
+  initialTotalPosts: number;
   userId: string;
 };
 
@@ -189,7 +192,8 @@ function StateChip({ state }: Readonly<{ state?: string }>) {
   }
 
   return (
-    <span className="rounded-md border border-[#9333EA] bg-[#eeeeee] px-3 py-1 text-sm font-semibold text-[#9333EA]">
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-[#9333EA] bg-[#eeeeee] px-3 py-1 text-sm font-semibold text-[#9333EA]">
+      <StateFlagIcon state={state} />
       {state}
     </span>
   );
@@ -246,7 +250,7 @@ function MediaIconStrip({ post }: Readonly<{ post: DashPostRecord }>) {
   );
 }
 
-function DashPostCard({
+export function DashPostCard({
   onDeleted,
   post,
 }: Readonly<{
@@ -257,7 +261,7 @@ function DashPostCard({
   const statusBadges = getStatusBadges(getAuthorStatus(post));
 
   return (
-    <article className="flex min-h-[365px] flex-col rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+    <article className="flex h-[618px] flex-col overflow-hidden rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
       <div className="flex items-start justify-between gap-3 border-b border-[#c4c4c4] pb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 text-sm text-[#4d4d4d]">
@@ -357,9 +361,11 @@ export default function DashPostClient({
   initialFetchFailed = false,
   initialHasMore,
   initialPosts,
+  initialTotalPosts,
   userId,
 }: Readonly<DashPostClientProps>) {
   const [posts, setPosts] = useState(initialPosts);
+  const [totalPosts, setTotalPosts] = useState(initialTotalPosts);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(
@@ -378,10 +384,14 @@ export default function DashPostClient({
   }, []);
 
   const shownLabel = useMemo(() => {
-    return `${posts.length} ${posts.length === 1 ? "post" : "posts"}`;
-  }, [posts.length]);
+    return `${totalPosts} ${totalPosts === 1 ? "post" : "posts"}`;
+  }, [totalPosts]);
 
-  async function handleShowMore() {
+  const loadMorePosts = useCallback(async () => {
+    if (!hasMore || loadingMore) {
+      return;
+    }
+
     setLoadingMore(true);
     setLoadError("");
 
@@ -403,65 +413,66 @@ export default function DashPostClient({
 
       const data = (await response.json()) as PostsResponse;
       const nextPosts = data.posts || [];
+      const nextTotalPosts =
+        typeof data.totalPosts === "number" ? data.totalPosts : totalPosts;
+      const currentIds = new Set(posts.map((post) => post._id));
+      const mergedPosts = [
+        ...posts,
+        ...nextPosts.filter((post) => !currentIds.has(post._id)),
+      ];
 
-      setPosts((currentPosts) => {
-        const currentIds = new Set(currentPosts.map((post) => post._id));
-        return [
-          ...currentPosts,
-          ...nextPosts.filter((post) => !currentIds.has(post._id)),
-        ];
-      });
-      setHasMore(nextPosts.length === dashPostPageSize);
+      setPosts(mergedPosts);
+      setTotalPosts(nextTotalPosts);
+      setHasMore(nextTotalPosts > mergedPosts.length);
     } catch {
       setLoadError("More posts could not be loaded.");
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [hasMore, loadingMore, posts, totalPosts, userId]);
 
   function handleDeleted(postId: string) {
-    setPosts((currentPosts) =>
-      currentPosts.filter((post) => post._id !== postId)
-    );
+    const wasLoaded = posts.some((post) => post._id === postId);
+    const nextPosts = posts.filter((post) => post._id !== postId);
+    const nextTotalPosts = wasLoaded ? Math.max(0, totalPosts - 1) : totalPosts;
+
+    setPosts(nextPosts);
+    setTotalPosts(nextTotalPosts);
+    setHasMore(nextTotalPosts > nextPosts.length);
   }
 
   return (
     <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <div className="mx-auto w-full max-w-[1280px] space-y-5">
         <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <Link
-                href="/dashprofile"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
-              >
-                <ArrowLeftIcon className="size-4" aria-hidden="true" />
-                Profile
-              </Link>
-              <h1 className="mt-3 text-3xl font-semibold leading-tight text-[#000000] sm:text-4xl">
-                My Posts
-              </h1>
-              <p className="mt-2 text-base leading-7 text-[#4d4d4d]">
-                Posts published from your TownHallUS account.
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              href="/dashprofile"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
+            >
+              <ArrowLeftIcon className="size-4" aria-hidden="true" />
+              Profile
+            </Link>
+            <h1 className="text-right text-sm font-bold text-[#000000]">
+              My Posts
+            </h1>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex h-10 items-center gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 text-sm font-semibold text-[#000000]">
-                <FileTextIcon className="size-4 text-[#9333EA]" aria-hidden="true" />
-                {shownLabel}
-              </span>
-              {canCreate ? (
-                <Button
-                  nativeButton={false}
-                  render={<Link href="/create-post" />}
-                  className="h-10 bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
-                >
-                  <PenLineIcon className="size-4" aria-hidden="true" />
-                  Create A Post
-                </Button>
-              ) : null}
-            </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-10 items-center gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 text-sm font-semibold text-[#000000]">
+              <FileTextIcon className="size-4 text-[#9333EA]" aria-hidden="true" />
+              {shownLabel}
+            </span>
+            {canCreate ? (
+              <Button
+                nativeButton={false}
+                render={<Link href="/create-post" />}
+                className="h-10 bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
+              >
+                <PenLineIcon className="size-4" aria-hidden="true" />
+                Create A Post
+              </Button>
+            ) : null}
           </div>
         </section>
 
@@ -496,22 +507,26 @@ export default function DashPostClient({
         )}
 
         {hasMore ? (
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={loadingMore}
-              onClick={handleShowMore}
-              className="h-11 border-[#9333EA] bg-[#f7f7f7] px-5 text-[#000000] hover:bg-[#d6d6d6]"
-            >
-              {loadingMore ? (
-                <LoaderCircleIcon className="size-4 animate-spin" />
-              ) : (
-                <ArrowRightIcon className="size-4" />
-              )}
-              Show More
-            </Button>
-          </div>
+          <section className="flex justify-end rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+            {loadingMore ? (
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#4d4d4d]">
+                <LoaderCircleIcon className="size-4 animate-spin" aria-hidden="true" />
+                Loading posts
+              </span>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  void loadMorePosts();
+                }}
+                className="h-11 border-[#9333EA] bg-[#f7f7f7] px-5 text-[#000000] hover:bg-[#d6d6d6]"
+              >
+                More
+                <ArrowRightIcon className="size-4" aria-hidden="true" />
+              </Button>
+            )}
+          </section>
         ) : null}
       </div>
     </main>
