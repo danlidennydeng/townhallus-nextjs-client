@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { SearchIcon, UserRoundIcon } from "lucide-react";
+import { SearchIcon, UserPlusIcon, UserRoundIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -74,9 +74,12 @@ export function HeaderPrimaryActionControl({
       render={<Link href="/create-account" />}
       variant="default"
       size="lg"
-      className="h-10 bg-[#9333EA] px-4 text-[#ffffff] hover:bg-[#7E22CE]"
+      aria-label="Create Account"
+      title="Create Account"
+      className="size-10 rounded-full bg-[#9333EA] p-0 text-[#ffffff] hover:bg-[#7E22CE] sm:h-10 sm:w-auto sm:rounded-lg sm:px-4"
     >
-      Create Account
+      <UserPlusIcon className="size-4" aria-hidden="true" />
+      <span className="hidden sm:inline">Create Account</span>
     </Button>
   );
 }
@@ -124,10 +127,12 @@ export function HeaderAuthControl({
       render={<Link href="/log-in" />}
       variant="outline"
       size="lg"
-      className="h-10 border-[#9333EA] bg-transparent px-4 text-[#000000] hover:bg-[#d6d6d6]"
+      aria-label="Log In"
+      title="Log In"
+      className="size-10 rounded-full border-[#9333EA] bg-transparent p-0 text-[#000000] hover:bg-[#d6d6d6] sm:h-10 sm:w-auto sm:rounded-lg sm:px-4"
     >
       <UserRoundIcon className="size-4" aria-hidden="true" />
-      Log In
+      <span className="hidden sm:inline">Log In</span>
     </Button>
   );
 }

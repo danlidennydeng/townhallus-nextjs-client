@@ -50,21 +50,26 @@ export async function SiteHeader() {
               <Button
                 variant="outline"
                 size="lg"
+                aria-label="Open menu"
+                title="Menu"
                 className="h-11 gap-2 rounded-lg border-[#9333EA] bg-[#f7f7f7] px-3 text-base text-[#000000] shadow-[0_1px_1px_rgba(0,0,0,0.14)] hover:bg-[#d6d6d6]"
               />
             }
           >
             <MenuIcon className="size-5" aria-hidden="true" />
-            <span>Menu</span>
+            <span className="hidden sm:inline">Menu</span>
             <Image
               src="/logo.svg"
               alt=""
               width={18}
               height={18}
               aria-hidden="true"
-              className="size-5 opacity-80"
+              className="hidden size-5 opacity-80 sm:block"
             />
-            <ChevronDownIcon className="size-4" aria-hidden="true" />
+            <ChevronDownIcon
+              className="hidden size-4 sm:block"
+              aria-hidden="true"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"

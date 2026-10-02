@@ -1,0 +1,71 @@
+[33mcommit a1e5baf60e0de3823214afb1372353e9009762a4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Tue Aug 25 21:05:40 2026 -0700
+
+    dashcomment page, mystate page are added.
+
+[33mcommit 28ba20441bcc04c1780f4b110f34af6f78301d40[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Sun Aug 23 07:50:12 2026 -0700
+
+    dashpost added. UI/UX fixes
+
+[33mcommit daa911e9e712ef299bcb0985749683120b8172b9[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Sun Aug 23 06:00:13 2026 -0700
+
+    UI/UX fixes
+
+[33mcommit e89c06be784d304c1057241e2d4d94aa0b576d55[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Fri Aug 21 21:52:40 2026 -0700
+
+    The 420px + 20px gap + 840px width for desktop
+
+[33mcommit ebf955553d2c9e0c4da0aa2d2e7c7a983ae99dff[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Fri Aug 21 21:26:42 2026 -0700
+
+    comment-section works
+
+[33mcommit 92f5c1a1ce37d2c184be454275d038b65eacdd1b[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Fri Aug 21 16:24:21 2026 -0700
+
+    minor fixed on create-post page and added Post page
+
+[33mcommit 4e9b89e2a8aec751dd72c884164e2c29b8d9ceb3[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Fri Aug 21 05:11:55 2026 -0700
+
+    create-post is added
+
+[33mcommit cbde9f453777f51d45697a43fe25acf56886717f[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Sun Aug 9 14:56:04 2026 -0700
+
+    diceBear avatar is added.
+
+[33mcommit 0acdc55b70ffba0a4d0a7c419d1cf2d772820b51[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Sun Aug 9 00:41:13 2026 -0700
+
+    logo, dynamic header, login and dashprofile page
+
+[33mcommit 25a0c3cf9e7425e2031231f32e761d0e4f1d8fbf[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Thu Aug 6 17:59:14 2026 -0700
+
+    create-account, verifyEmail work
+
+[33mcommit a93a9d0dd6cca9b514a731637c26a688d20e728c[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Thu Aug 6 10:48:00 2026 -0700
+
+    about and faq page
+
+[33mcommit d277bdb26683e32503d037d5a52c812ef394a34c[m
+Author: Danli Denny Deng <danlidennydeng@gmail.com>
+Date:   Sat Aug 1 20:28:21 2026 -0700
+
+    Initial commit from Create Next App
