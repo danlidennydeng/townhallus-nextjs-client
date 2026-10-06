@@ -151,7 +151,7 @@ function getPostPreview(content?: string) {
     return "No body content.";
   }
 
-  return text.length > 280 ? `${text.slice(0, 280).trim()}...` : text;
+  return text;
 }
 
 function formatDate(value?: string) {
@@ -192,10 +192,13 @@ function StateChip({ state }: Readonly<{ state?: string }>) {
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-[#9333EA] bg-[#eeeeee] px-3 py-1 text-sm font-semibold text-[#9333EA]">
+    <Link
+      href={`/mystate/${encodeURIComponent(state)}`}
+      className="inline-flex items-center gap-1.5 rounded-md border border-[#9333EA] bg-[#eeeeee] px-3 py-1 text-sm font-semibold text-[#9333EA] transition-colors hover:bg-[#d6d6d6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9333EA]"
+    >
       <StateFlagIcon state={state} />
       {state}
-    </span>
+    </Link>
   );
 }
 
@@ -288,7 +291,7 @@ export function DashPostCard({
         <h2 className="break-words text-2xl font-semibold leading-tight text-[#000000]">
           {post.title || "Untitled post"}
         </h2>
-        <p className="mt-3 max-h-[105px] overflow-hidden text-base leading-7 text-[#333333]">
+        <p className="mt-3 line-clamp-2 break-words text-base leading-7 text-[#333333]">
           {getPostPreview(post.content)}
         </p>
       </Link>

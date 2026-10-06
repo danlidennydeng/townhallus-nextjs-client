@@ -22,6 +22,7 @@ import {
   FormEvent,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -162,14 +163,12 @@ function Notice({
   return (
     <div
       className={`flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 ${
-        tone === "success" ? "text-[#000000]" : "text-[#B91C1C]"
+        tone === "success" ? "text-[#15803D]" : "text-[#B91C1C]"
       }`}
       aria-live="polite"
     >
       <Icon
-        className={`mt-0.5 size-4 shrink-0 ${
-          tone === "success" ? "text-[#9333EA]" : ""
-        }`}
+        className="mt-0.5 size-4 shrink-0"
         aria-hidden="true"
       />
       <span>{message}</span>
@@ -189,16 +188,29 @@ function StatusBadge({
   label,
   title,
   rounded = "full",
-}: Readonly<{ label: string; title: string; rounded?: "full" | "md" }>) {
+  guideOpen,
+  onToggleGuide,
+}: Readonly<{
+  label: string;
+  title: string;
+  rounded?: "full" | "md";
+  guideOpen: boolean;
+  onToggleGuide: () => void;
+}>) {
   return (
-    <span
+    <button
+      type="button"
       title={title}
-      className={`flex size-7 items-center justify-center border-2 border-[#9333EA] text-sm font-bold text-[#9333EA] ${
+      aria-label={`${title}: ${guideOpen ? "hide" : "show"} Status Guide`}
+      aria-expanded={guideOpen}
+      aria-controls="status-guide"
+      onClick={onToggleGuide}
+      className={`flex size-7 items-center justify-center border-2 border-[#9333EA] bg-transparent p-0 text-sm font-bold text-[#9333EA] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9333EA] ${
         rounded === "full" ? "rounded-full" : "rounded-md"
       }`}
     >
       {label}
-    </span>
+    </button>
   );
 }
 
@@ -224,6 +236,9 @@ export default function DashProfileClient({
   const [updateUserSuccess, setUpdateUserSuccess] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [sensitiveLoading, setSensitiveLoading] = useState(false);
+  const [statusGuideOpen, setStatusGuideOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const logoutDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -469,6 +484,11 @@ export default function DashProfileClient({
   }
 
   async function handleLogout() {
+    if (logoutLoading) {
+      return;
+    }
+
+    setLogoutLoading(true);
     try {
       await fetch(apiUrl("/user/logout"), {
         method: "POST",
@@ -476,6 +496,8 @@ export default function DashProfileClient({
       });
     } finally {
       clearStoredUser();
+      logoutDialogRef.current?.close();
+      setLogoutLoading(false);
       router.push("/log-in");
     }
   }
@@ -531,16 +553,26 @@ export default function DashProfileClient({
                       label={badge.label}
                       title={badge.title}
                       rounded={badge.rounded}
+                      guideOpen={statusGuideOpen}
+                      onToggleGuide={() => setStatusGuideOpen((open) => !open)}
                     />
                   ) : null
                 )}
               </div>
 
-              <details className="mt-5 w-full rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-3 text-left">
-                <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold text-[#000000] [&::-webkit-details-marker]:hidden">
-                  <CircleHelpIcon className="size-5 text-[#9333EA]" />
+              <section
+                id="status-guide"
+                hidden={!statusGuideOpen}
+                aria-labelledby="status-guide-heading"
+                className="mt-5 w-full rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-3 text-left"
+              >
+                <h2
+                  id="status-guide-heading"
+                  className="flex items-center gap-2 font-semibold text-[#000000]"
+                >
+                  <CircleHelpIcon className="size-5 text-[#9333EA]" aria-hidden="true" />
                   Status Guide
-                </summary>
+                </h2>
                 <ul className="mt-3 space-y-2 text-sm text-[#1f1f1f]">
                   <li>Hidden eye = legal information is private.</li>
                   <li>Visible eye = public username and badges.</li>
@@ -553,7 +585,7 @@ export default function DashProfileClient({
                 <Link href="/faqpage" className={`mt-3 block ${accentLinkClassName}`}>
                   Learn more
                 </Link>
-              </details>
+              </section>
             </div>
           </section>
 
@@ -568,7 +600,9 @@ export default function DashProfileClient({
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleLogout}
+                onClick={() => logoutDialogRef.current?.showModal()}
+                aria-haspopup="dialog"
+                disabled={logoutLoading}
                 className="border-[#9333EA] bg-transparent text-[#000000] hover:bg-[#d6d6d6]"
               >
                 <LogOutIcon className="size-4" aria-hidden="true" />
@@ -605,8 +639,7 @@ export default function DashProfileClient({
             <Button
               nativeButton={false}
               render={<Link href="/dashpost" />}
-              variant="outline"
-              className="mt-4 w-full border-[#9333EA] bg-transparent text-[#000000] hover:bg-[#d6d6d6]"
+              className="mt-4 w-full border-[#9333EA] bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
             >
               <ArrowRightIcon className="size-4" aria-hidden="true" />
               Open My Posts
@@ -630,8 +663,7 @@ export default function DashProfileClient({
             <Button
               nativeButton={false}
               render={<Link href="/dashcomment" />}
-              variant="outline"
-              className="mt-4 w-full border-[#9333EA] bg-transparent text-[#000000] hover:bg-[#d6d6d6]"
+              className="mt-4 w-full border-[#9333EA] bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
             >
               <ArrowRightIcon className="size-4" aria-hidden="true" />
               Open My Comments
@@ -813,6 +845,55 @@ export default function DashProfileClient({
           </form>
         </section>
       </div>
+      <dialog
+        ref={logoutDialogRef}
+        aria-labelledby="logout-dialog-title"
+        aria-describedby="logout-dialog-description"
+        onCancel={(event) => {
+          if (logoutLoading) {
+            event.preventDefault();
+          }
+        }}
+        className="fixed inset-0 m-auto w-[calc(100%_-_2rem)] max-w-md rounded-md border border-[#999999] bg-[#f7f7f7] p-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop:bg-[#000000]/45"
+      >
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full border-2 border-[#9333EA] bg-[#eeeeee]">
+          <LogOutIcon className="size-7 text-[#9333EA]" aria-hidden="true" />
+        </div>
+        <h2
+          id="logout-dialog-title"
+          className="mt-4 text-lg font-semibold text-[#000000]"
+        >
+          Log out of your account?
+        </h2>
+        <p id="logout-dialog-description" className="mt-2 text-sm text-[#4d4d4d]">
+          Are you sure you want to log out?
+        </p>
+        <div className="mt-5 flex justify-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            autoFocus
+            disabled={logoutLoading}
+            onClick={() => logoutDialogRef.current?.close()}
+            className="border-[#9333EA] bg-transparent text-[#000000]"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={logoutLoading}
+            onClick={handleLogout}
+            className="border border-[#9333EA] bg-[#9333EA] text-[#ffffff]"
+          >
+            {logoutLoading ? (
+              <LoaderCircleIcon className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <LogOutIcon className="size-4" aria-hidden="true" />
+            )}
+            {logoutLoading ? "Logging out..." : "Log Out"}
+          </Button>
+        </div>
+      </dialog>
     </main>
   );
 }

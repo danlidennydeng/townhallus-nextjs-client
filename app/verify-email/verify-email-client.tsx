@@ -202,14 +202,12 @@ export default function VerifyEmailClient() {
             <div
               className={`flex items-start gap-2 rounded-md border px-4 py-3 text-sm leading-6 ${
                 messageType === "success"
-                  ? "border-[#808080] bg-[#eeeeee] text-[#000000]"
+                  ? "border-[#808080] bg-[#eeeeee] text-[#15803D]"
                   : "border-[#999999] bg-[#eeeeee] text-[#B91C1C]"
               }`}
             >
               <TriangleAlertIcon
-                className={`mt-0.5 size-4 shrink-0 ${
-                  messageType === "success" ? "text-[#4d4d4d]" : ""
-                }`}
+                className="mt-0.5 size-4 shrink-0"
                 aria-hidden="true"
               />
               <span>{message}</span>

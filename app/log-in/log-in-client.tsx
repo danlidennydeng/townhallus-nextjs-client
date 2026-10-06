@@ -151,7 +151,7 @@ export default function LogInClient() {
     <main className="flex flex-1 flex-col bg-[#e6e6e6] px-2 py-8 sm:px-4 lg:py-12">
       <div className="mx-auto flex w-full max-w-7xl flex-col">
         {justSignedUp ? (
-          <div className="mb-4 rounded-md border border-[#999999] bg-[#eeeeee] px-4 py-3 text-center text-xl font-extrabold text-[#9333EA] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
+          <div className="mb-4 rounded-md border border-[#999999] bg-[#eeeeee] px-4 py-3 text-center text-xl font-extrabold text-[#15803D] shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             You have successfully signed up! Please log in.
           </div>
         ) : null}
