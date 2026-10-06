@@ -161,12 +161,14 @@ function Notice({
 
   return (
     <div
-      className="flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 text-[#000000]"
+      className={`flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 ${
+        tone === "success" ? "text-[#000000]" : "text-[#B91C1C]"
+      }`}
       aria-live="polite"
     >
       <Icon
         className={`mt-0.5 size-4 shrink-0 ${
-          tone === "success" ? "text-[#9333EA]" : "text-[#4d4d4d]"
+          tone === "success" ? "text-[#9333EA]" : ""
         }`}
         aria-hidden="true"
       />

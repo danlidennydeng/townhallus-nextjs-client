@@ -74,9 +74,9 @@ function FieldError({ message }: Readonly<{ message?: string }>) {
   return (
     <div className="mt-1 min-h-12 w-full" aria-live="polite">
       {message ? (
-        <div className="flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 text-[#000000]">
+        <div className="flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 text-[#B91C1C]">
           <TriangleAlertIcon
-            className="mt-0.5 size-4 shrink-0 text-[#4d4d4d]"
+            className="mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
           <span>{message}</span>
@@ -214,9 +214,9 @@ export default function LogInClient() {
 
               <div className="mt-1 min-h-12" aria-live="polite">
                 {errors.general ? (
-                  <div className="flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 text-[#000000]">
+                  <div className="flex items-start gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2 text-sm leading-5 text-[#B91C1C]">
                     <TriangleAlertIcon
-                      className="mt-0.5 size-4 shrink-0 text-[#4d4d4d]"
+                      className="mt-0.5 size-4 shrink-0"
                       aria-hidden="true"
                     />
                     <span>{errors.general}</span>

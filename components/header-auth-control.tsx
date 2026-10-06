@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { SearchIcon, UserPlusIcon, UserRoundIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -22,6 +23,7 @@ function getServerSeedUser(serverUserId?: string | null) {
 }
 
 function useStoredHeaderUser(serverUserId?: string | null) {
+  const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<TownHallUser | null>(() =>
     getServerSeedUser(serverUserId)
   );
@@ -35,7 +37,8 @@ function useStoredHeaderUser(serverUserId?: string | null) {
     return subscribeToAuthChanges(syncUser);
   }, [serverUserId]);
 
-  return currentUser;
+  // Signup sets a cookie before the user has verified their email.
+  return pathname === "/verify-email" ? null : currentUser;
 }
 
 type HeaderAuthProps = {

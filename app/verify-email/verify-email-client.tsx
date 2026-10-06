@@ -17,10 +17,16 @@ import {
 } from "react";
 
 import { apiUrl } from "@/lib/api-client";
+import { setStoredUser, type TownHallUser } from "@/lib/auth-client";
+
+type VerifyEmailResponse = {
+  message?: string;
+  user?: TownHallUser;
+};
 
 async function readResponseMessage(response: Response) {
   try {
-    const data = (await response.json()) as { message?: string };
+    const data = (await response.json()) as VerifyEmailResponse;
     return data.message;
   } catch {
     return undefined;
@@ -102,9 +108,16 @@ export default function VerifyEmailClient() {
         throw new Error(responseMessage || "Verification failed");
       }
 
+      const data = (await response.json()) as VerifyEmailResponse;
+
+      if (!data.user?._id) {
+        throw new Error("Email verified, but user information was not returned.");
+      }
+
+      setStoredUser(data.user);
       setMessageType("success");
-      setMessage("Email verified successfully. Redirecting to home page...");
-      router.push("/");
+      setMessage("Email verified successfully. Redirecting to your profile...");
+      router.push("/dashprofile");
     } catch (error) {
       setMessageType("error");
       setMessage(
@@ -126,11 +139,11 @@ export default function VerifyEmailClient() {
       >
         <div className="flex justify-center">
           <span className="flex size-16 items-center justify-center rounded-lg border border-[#999999] bg-[#ffffff]">
-            <MailCheckIcon className="size-9 text-[#666666]" aria-hidden="true" />
+            <MailCheckIcon className="size-9 text-[#9333EA]" aria-hidden="true" />
           </span>
         </div>
 
-        <h1 className="mt-6 text-center text-3xl font-bold text-[#000000]">
+        <h1 className="mt-6 text-center text-3xl font-bold text-[#9333EA]">
           Verify Your Email
         </h1>
 
@@ -172,7 +185,7 @@ export default function VerifyEmailClient() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-10 flex w-full items-center justify-center gap-2 rounded-md border border-[#808080] bg-[#000000] px-8 py-3 text-xl font-semibold text-[#ffffff] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-colors hover:bg-[#4d4d4d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000] disabled:opacity-60 sm:px-16"
+          className="mt-10 flex w-full items-center justify-center gap-2 rounded-md border border-[#808080] bg-[#9333EA] px-8 py-3 text-xl font-semibold text-[#ffffff] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-colors hover:bg-[#4d4d4d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#000000] disabled:opacity-60 sm:px-16"
         >
           {loading ? (
             <LoaderCircleIcon
@@ -190,11 +203,13 @@ export default function VerifyEmailClient() {
               className={`flex items-start gap-2 rounded-md border px-4 py-3 text-sm leading-6 ${
                 messageType === "success"
                   ? "border-[#808080] bg-[#eeeeee] text-[#000000]"
-                  : "border-[#999999] bg-[#eeeeee] text-[#000000]"
+                  : "border-[#999999] bg-[#eeeeee] text-[#B91C1C]"
               }`}
             >
               <TriangleAlertIcon
-                className="mt-0.5 size-4 shrink-0 text-[#4d4d4d]"
+                className={`mt-0.5 size-4 shrink-0 ${
+                  messageType === "success" ? "text-[#4d4d4d]" : ""
+                }`}
                 aria-hidden="true"
               />
               <span>{message}</span>

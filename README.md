@@ -1,5 +1,17 @@
 Codex in VS Code 5.5 extra high
 
+---------------------------------------------------------
+Federico did not verify its 6 digit code. Let's wait 24 hours to see if MongoDB would delete this record.
+10AM, Oct 6
+
+===========================================================
+waring message has to be in red color for data validation
+
+----------------------------------------
+picture size is still less than 1MB.
+-------------------------------------------------
+
+
 Marterial Design Style.
 shadcn/ui, lucide icons is default
 =========================================
