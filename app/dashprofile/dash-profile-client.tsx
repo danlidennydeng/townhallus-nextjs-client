@@ -36,6 +36,7 @@ import {
   type TownHallUser,
 } from "@/lib/auth-client";
 import { pixelAvatarPath } from "@/lib/avatar";
+import styles from "./dash-profile.module.css";
 
 type SensitiveInfo = {
   lastname?: string;
@@ -228,6 +229,10 @@ export default function DashProfileClient({
   const [totalPosts, setTotalPosts] = useState<number | null>(
     typeof initialTotalPosts === "number" ? initialTotalPosts : null
   );
+  const [statePostCount, setStatePostCount] = useState<{
+    state: string;
+    count: number | null;
+  } | null>(null);
   const [sensitiveInfo, setSensitiveInfo] = useState<SensitiveInfo>({});
   const [formData, setFormData] = useState<ProfileFormData>(
     initialProfileFormData
@@ -239,6 +244,7 @@ export default function DashProfileClient({
   const [statusGuideOpen, setStatusGuideOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const logoutDialogRef = useRef<HTMLDialogElement>(null);
+  const userState = currentUser?.state?.trim();
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -301,6 +307,49 @@ export default function DashProfileClient({
       ignore = true;
     };
   }, [currentUser?._id]);
+
+  useEffect(() => {
+    if (!userState) {
+      return;
+    }
+
+    const state = userState;
+    let ignore = false;
+    const params = new URLSearchParams({
+      limit: "1",
+      startIndex: "0",
+      state,
+    });
+
+    async function fetchStatePostCount() {
+      let count: number | null = null;
+
+      try {
+        const response = await fetch(apiUrl(`/post/getposts?${params.toString()}`), {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as { totalPosts?: number };
+          if (typeof data.totalPosts === "number") {
+            count = data.totalPosts;
+          }
+        }
+      } catch {
+        // Leave the count unavailable if the state posts cannot be loaded.
+      }
+
+      if (!ignore) {
+        setStatePostCount({ state, count });
+      }
+    }
+
+    fetchStatePostCount();
+
+    return () => {
+      ignore = true;
+    };
+  }, [userState]);
 
   useEffect(() => {
     if (!currentUser?._id) {
@@ -401,6 +450,8 @@ export default function DashProfileClient({
   const birthdayFormatted = formatBirthday(sensitiveInfo.birthday);
   const commentCount = totalComments ?? 0;
   const postCount = totalPosts ?? 0;
+  const statePostCountLabel =
+    statePostCount?.state === userState ? statePostCount?.count ?? "—" : "…";
   const statusBadges = [
     currentUser?.isVoter
       ? { label: "V", title: "U.S. Voter Verified", rounded: "full" as const }
@@ -530,7 +581,7 @@ export default function DashProfileClient({
 
   return (
     <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-      <div className="mx-auto grid w-full max-w-[1280px] gap-6 lg:grid-cols-[420px_minmax(0,840px)] lg:gap-5">
+      <div className={`${styles.layout} mx-auto grid w-full max-w-[1280px] gap-6 lg:grid-cols-[420px_minmax(0,840px)] lg:gap-5`}>
         <aside className="space-y-4">
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <div className="flex flex-col items-center text-center">
@@ -622,6 +673,50 @@ export default function DashProfileClient({
             ) : null}
           </section>
 
+          {userState ? (
+            <section
+              aria-labelledby="state-posts-heading"
+              className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 id="state-posts-heading" className={mutedLabelClassName}>
+                    State Posts
+                  </h2>
+                  <p className="font-semibold text-[#000000]" aria-live="polite">
+                    <span
+                      className={countBadgeClassName}
+                      title={
+                        statePostCountLabel === "…"
+                          ? "Loading post count"
+                          : statePostCountLabel === "—"
+                            ? "Post count unavailable"
+                            : undefined
+                      }
+                    >
+                      {statePostCountLabel}
+                    </span>{" "}
+                    posts in {userState}
+                  </p>
+                </div>
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-[#9333EA] bg-[#eeeeee] text-[#9333EA]">
+                  <FileTextIcon className="size-5" aria-hidden="true" />
+                </span>
+              </div>
+
+              <Button
+                nativeButton={false}
+                render={
+                  <Link href={`/mystate/${encodeURIComponent(userState.toLowerCase())}`} />
+                }
+                className="mt-4 w-full bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
+              >
+                <EyeIcon className="size-4" aria-hidden="true" />
+                {userState} Posts
+              </Button>
+            </section>
+          ) : null}
+
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -671,179 +766,177 @@ export default function DashProfileClient({
           </section>
         </aside>
 
-        <section className="space-y-6">
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            className="rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)] sm:p-5"
-          >
-            <div className="flex flex-col gap-2 border-b border-[#c4c4c4] pb-4 sm:flex-row sm:items-center sm:justify-between">
-              {sensitiveLoading ? (
-                <div className="flex items-center gap-2 text-sm text-[#4d4d4d]">
-                  <LoaderCircleIcon className="size-4 animate-spin" />
-                  Loading private fields
-                </div>
-              ) : null}
-              <p className="text-right text-sm font-bold text-[#000000] sm:ml-auto">
-                Profile Details
-              </p>
-            </div>
-
-            {!currentUser.isVoter ? (
-              <section className="mt-5 rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-4">
-                <div className="mb-5 flex items-start gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-[#999999] bg-[#f7f7f7]">
-                    <ShieldCheckIcon className="size-5 text-[#9333EA]" />
-                  </span>
-                  <div>
-                    <h2 className="font-semibold text-[#000000]">
-                      Please be proud to verify your citizenship or voter status.
-                    </h2>
-                    <p className="mt-1 text-sm leading-6 text-[#4d4d4d]">
-                      These fields are treated as private account verification
-                      information.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div>
-                    <label htmlFor="driverlicense" className={labelClassName}>
-                      <span>Driver License number</span>
-                    </label>
-                    <p className="mb-1 min-h-5 text-sm text-[#9333EA]">
-                      {sensitiveInfo.driverlicense || "Driver License number?"}
-                    </p>
-                    <input
-                      type="text"
-                      id="driverlicense"
-                      name="driverlicense"
-                      maxLength={15}
-                      autoComplete="off"
-                      placeholder="7 - 15 digits"
-                      value={formData.driverlicense}
-                      onChange={handleChange}
-                      className={inputClassName}
-                    />
-                    <FieldError message={errors.driverlicense} />
-                  </div>
-
-                  <div>
-                    <label htmlFor="birthday" className={labelClassName}>
-                      <span>Birthday</span>
-                    </label>
-                    <p className="mb-1 min-h-5 text-sm text-[#9333EA]">
-                      {birthdayFormatted || "Birthday?"}
-                    </p>
-                    <input
-                      type="date"
-                      id="birthday"
-                      name="birthday"
-                      autoComplete="off"
-                      value={formData.birthday}
-                      onChange={handleChange}
-                      className={inputClassName}
-                    />
-                    <FieldError message={errors.birthday} />
-                  </div>
-
-                  <div>
-                    <label htmlFor="ssn" className={labelClassName}>
-                      <span>Social Security Number</span>
-                    </label>
-                    <p className="mb-1 min-h-5 text-sm text-[#9333EA]">
-                      {sensitiveInfo.ssn || "SSN number?"}
-                    </p>
-                    <input
-                      type="text"
-                      id="ssn"
-                      name="ssn"
-                      maxLength={4}
-                      inputMode="numeric"
-                      pattern="\\d*"
-                      autoComplete="off"
-                      placeholder="Last 4 digits"
-                      value={formData.ssn}
-                      onChange={handleChange}
-                      className={inputClassName}
-                    />
-                    <FieldError message={errors.ssn} />
-                  </div>
-                </div>
-              </section>
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className={`${styles.details} rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)] sm:p-5`}
+        >
+          <div className="flex flex-col gap-2 border-b border-[#c4c4c4] pb-4 sm:flex-row sm:items-center sm:justify-between">
+            {sensitiveLoading ? (
+              <div className="flex items-center gap-2 text-sm text-[#4d4d4d]">
+                <LoaderCircleIcon className="size-4 animate-spin" />
+                Loading private fields
+              </div>
             ) : null}
+            <p className="text-right text-sm font-bold text-[#000000] sm:ml-auto">
+              Profile Details
+            </p>
+          </div>
 
-            <section className="mt-5">
-              <label htmlFor="state" className={labelClassName}>
-                <span>Your state</span>
-                <span className="text-[#9333EA]">
-                  {currentUser.state || "State?"}
+          {!currentUser.isVoter ? (
+            <section className="mt-5 rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-4">
+              <div className="mb-5 flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-[#999999] bg-[#f7f7f7]">
+                  <ShieldCheckIcon className="size-5 text-[#9333EA]" />
                 </span>
-              </label>
-              <input
-                type="text"
-                id="state"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                disabled={!canUpdateLocation}
-                className={`${inputClassName} disabled:bg-[#eeeeee] disabled:text-[#4d4d4d]`}
-              />
-              <p className="mt-1 text-xs text-[#4d4d4d]">
-                {canUpdateLocation
-                  ? "Location update is available."
-                  : "State can be changed after 90 days from the last profile update."}
-              </p>
-            </section>
+                <div>
+                  <h2 className="font-semibold text-[#000000]">
+                    Please be proud to verify your citizenship or voter status.
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-[#4d4d4d]">
+                    These fields are treated as private account verification
+                    information.
+                  </p>
+                </div>
+              </div>
 
-            <section className="mt-5">
-              <label htmlFor="introduction" className={labelClassName}>
-                <span>Self-introduction</span>
-                <span className="text-sm text-[#9333EA]">
-                  <strong>{introductionCharactersRemaining}</strong>{" "}
-                  <strong>characters remaining</strong>
-                </span>
-              </label>
-              <textarea
-                id="introduction"
-                name="introduction"
-                rows={5}
-                maxLength={introductionMaxLength}
-                placeholder={`Maximum ${introductionMaxLength} characters. Other users can see your contents here. Type a space then update to delete existing contents. No HTML tags.`}
-                value={formData.introduction}
-                onChange={handleChange}
-                className={textareaClassName}
-              />
-              <FieldError message={errors.introduction} />
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label htmlFor="driverlicense" className={labelClassName}>
+                    <span>Driver License number</span>
+                  </label>
+                  <p className="mb-1 min-h-5 text-sm text-[#9333EA]">
+                    {sensitiveInfo.driverlicense || "Driver License number?"}
+                  </p>
+                  <input
+                    type="text"
+                    id="driverlicense"
+                    name="driverlicense"
+                    maxLength={15}
+                    autoComplete="off"
+                    placeholder="7 - 15 digits"
+                    value={formData.driverlicense}
+                    onChange={handleChange}
+                    className={inputClassName}
+                  />
+                  <FieldError message={errors.driverlicense} />
+                </div>
 
-              <div className="rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-3 text-sm italic font-semibold text-[#4d4d4d]">
-                {currentUser.introduction || "No self-introduction yet?"}
+                <div>
+                  <label htmlFor="birthday" className={labelClassName}>
+                    <span>Birthday</span>
+                  </label>
+                  <p className="mb-1 min-h-5 text-sm text-[#9333EA]">
+                    {birthdayFormatted || "Birthday?"}
+                  </p>
+                  <input
+                    type="date"
+                    id="birthday"
+                    name="birthday"
+                    autoComplete="off"
+                    value={formData.birthday}
+                    onChange={handleChange}
+                    className={inputClassName}
+                  />
+                  <FieldError message={errors.birthday} />
+                </div>
+
+                <div>
+                  <label htmlFor="ssn" className={labelClassName}>
+                    <span>Social Security Number</span>
+                  </label>
+                  <p className="mb-1 min-h-5 text-sm text-[#9333EA]">
+                    {sensitiveInfo.ssn || "SSN number?"}
+                  </p>
+                  <input
+                    type="text"
+                    id="ssn"
+                    name="ssn"
+                    maxLength={4}
+                    inputMode="numeric"
+                    pattern="\\d*"
+                    autoComplete="off"
+                    placeholder="Last 4 digits"
+                    value={formData.ssn}
+                    onChange={handleChange}
+                    className={inputClassName}
+                  />
+                  <FieldError message={errors.ssn} />
+                </div>
               </div>
             </section>
+          ) : null}
 
-            <div className="mt-5 flex flex-col gap-3">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="h-12 border border-[#9333EA] bg-[#9333EA] text-base font-semibold text-[#ffffff] hover:bg-[#7E22CE]"
-              >
-                {loading ? (
-                  <LoaderCircleIcon
-                    className="size-5 animate-spin"
-                    aria-hidden="true"
-                  />
-                ) : null}
-                <span>{loading ? "Loading..." : "Update"}</span>
-                {!loading ? (
-                  <ArrowRightIcon className="size-5" aria-hidden="true" />
-                ) : null}
-              </Button>
+          <section className="mt-5">
+            <label htmlFor="state" className={labelClassName}>
+              <span>Your state</span>
+              <span className="text-[#9333EA]">
+                {currentUser.state || "State?"}
+              </span>
+            </label>
+            <input
+              type="text"
+              id="state"
+              name="state"
+              value={formData.state}
+              onChange={handleChange}
+              disabled={!canUpdateLocation}
+              className={`${inputClassName} disabled:bg-[#eeeeee] disabled:text-[#4d4d4d]`}
+            />
+            <p className="mt-1 text-xs text-[#4d4d4d]">
+              {canUpdateLocation
+                ? "Location update is available."
+                : "State can be changed after 90 days from the last profile update."}
+            </p>
+          </section>
 
-              <Notice message={errors.general} />
-              <Notice message={updateUserSuccess} tone="success" />
+          <section className="mt-5">
+            <label htmlFor="introduction" className={labelClassName}>
+              <span>Self-introduction</span>
+              <span className="text-sm text-[#9333EA]">
+                <strong>{introductionCharactersRemaining}</strong>{" "}
+                <strong>characters remaining</strong>
+              </span>
+            </label>
+            <textarea
+              id="introduction"
+              name="introduction"
+              rows={5}
+              maxLength={introductionMaxLength}
+              placeholder={`Maximum ${introductionMaxLength} characters. Other users can see your contents here. Type a space then update to delete existing contents. No HTML tags.`}
+              value={formData.introduction}
+              onChange={handleChange}
+              className={textareaClassName}
+            />
+            <FieldError message={errors.introduction} />
+
+            <div className="rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-3 text-sm italic font-semibold text-[#4d4d4d]">
+              {currentUser.introduction || "No self-introduction yet?"}
             </div>
-          </form>
-        </section>
+          </section>
+
+          <div className="mt-5 flex flex-col gap-3">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-12 border border-[#9333EA] bg-[#9333EA] text-base font-semibold text-[#ffffff] hover:bg-[#7E22CE]"
+            >
+              {loading ? (
+                <LoaderCircleIcon
+                  className="size-5 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : null}
+              <span>{loading ? "Loading..." : "Update"}</span>
+              {!loading ? (
+                <ArrowRightIcon className="size-5" aria-hidden="true" />
+              ) : null}
+            </Button>
+
+            <Notice message={errors.general} />
+            <Notice message={updateUserSuccess} tone="success" />
+          </div>
+        </form>
       </div>
       <dialog
         ref={logoutDialogRef}

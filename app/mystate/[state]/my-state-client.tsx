@@ -82,6 +82,8 @@ export default function MyStateClient({
   );
   const [currentUser, setCurrentUser] = useState<TownHallUser | null>(null);
   const canCreate = Boolean(currentUser?.isPoster);
+  const userState = currentUser?.state?.trim();
+  const isNationwide = stateName.trim().toLowerCase() === "nationwide";
 
   useEffect(() => {
     function syncUser() {
@@ -154,7 +156,7 @@ export default function MyStateClient({
     <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <div className="mx-auto w-full max-w-[1280px] space-y-5">
         <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <Link
               href="/"
               className="inline-flex items-center gap-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
@@ -162,9 +164,31 @@ export default function MyStateClient({
               <ArrowLeftIcon className="size-4" aria-hidden="true" />
               Home
             </Link>
-            <h1 className="text-right text-sm font-bold text-[#000000]">
-              {stateName} Posts
-            </h1>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+              {isNationwide && userState ? (
+                <Button
+                  nativeButton={false}
+                  render={
+                    <Link href={`/mystate/${encodeURIComponent(userState.toLowerCase())}`} />
+                  }
+                  className="bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
+                >
+                  {userState}
+                </Button>
+              ) : null}
+              <h1 className="text-right text-sm font-bold text-[#000000]">
+                {stateName}
+              </h1>
+              {!isNationwide ? (
+                <Button
+                  nativeButton={false}
+                  render={<Link href="/mystate/Nationwide" />}
+                  className="bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
+                >
+                  Nationwide
+                </Button>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">

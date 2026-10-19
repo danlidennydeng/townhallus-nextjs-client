@@ -1,0 +1,13 @@
+@media (min-width: 64rem) {
+  .layout {
+    align-content: start;
+    align-items: stretch;
+  }
+
+  .details {
+    /* Let the left stack determine the row height, regardless of form content. */
+    contain: size;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}

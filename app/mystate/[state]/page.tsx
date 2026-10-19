@@ -20,12 +20,15 @@ type PostsResponse = {
   totalPosts?: number;
 };
 
-function decodeStateParam(value: string) {
+function normalizeStateParam(value: string) {
+  let stateName: string;
   try {
-    return decodeURIComponent(value).trim();
+    stateName = decodeURIComponent(value).trim();
   } catch {
-    return value.trim();
+    stateName = value.trim();
   }
+
+  return stateName.toLowerCase().replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
 }
 
 export async function generateMetadata({
@@ -34,7 +37,7 @@ export async function generateMetadata({
   params: Promise<MyStatePageParams>;
 }>): Promise<Metadata> {
   const { state } = await params;
-  const stateName = decodeStateParam(state) || "State";
+  const stateName = normalizeStateParam(state) || "State";
 
   return {
     title: `${stateName} Posts | TownHallUS.com`,
@@ -77,13 +80,14 @@ export default async function MyStatePage({
   params: Promise<MyStatePageParams>;
 }>) {
   const { state } = await params;
-  const stateName = decodeStateParam(state);
+  const stateName = normalizeStateParam(state);
   const { failed, posts, totalPosts } = await fetchStatePosts(stateName);
 
   return (
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
       <SiteHeader />
       <MyStateClient
+        key={stateName}
         initialFetchFailed={failed}
         initialHasMore={totalPosts > posts.length}
         initialPosts={posts}
