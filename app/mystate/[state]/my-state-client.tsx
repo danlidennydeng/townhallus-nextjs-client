@@ -234,7 +234,7 @@ export default function MyStateClient({
         ) : (
           <section
             aria-label={`${stateName} posts`}
-            className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
           >
             {posts.map((post) => (
               <DashPostCard

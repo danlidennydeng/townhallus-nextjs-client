@@ -234,18 +234,24 @@ export default function LogInClient() {
 
           <section className="flex h-auto w-full flex-row items-center overflow-hidden rounded-md border border-[#9333EA] bg-[#f7f7f7] p-3 shadow-[0_1px_2px_rgba(0,0,0,0.14)] lg:h-[460px] lg:w-[365px]">
             <p className="text-[24px] leading-tight text-[#000000] lg:text-[32px]">
-              A <span className={accentClassName}>professional political</span>{" "}
-              and <span className={accentClassName}>social discussion forum</span>{" "}
+              <span className="mb-4 block text-left text-[26px] font-bold lg:text-[34px]">
+                TownhallUS.com
+              </span>
+              A{" "}
+              <span className={accentClassName}>
+                professional neutral political
+              </span>{" "}
+              <span className={accentClassName}>discussion forum</span>{" "}
               exclusively for{" "}
               <span className={accentClassName}>American registered</span>{" "}
               <span className={accentClassName}>voters</span> and{" "}
-              <span className={accentClassName}>young American citizens</span>{" "}
-              between the ages of 13 and 17{" "}
-              <span className="text-xl text-[#9333EA]">*</span>
+              <span className={accentClassName}>young American citizens</span>.
             </p>
           </section>
 
           <section className="flex h-auto w-full flex-col overflow-hidden rounded-md border border-[#9333EA] bg-[#f7f7f7] p-3 text-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.14)] lg:h-[460px] lg:w-[365px] lg:text-[14px]">
+
+
             <p className="mb-3 p-1 mt-2">
               We advocate for{" "}
               <span className={accentClassName}>
@@ -255,16 +261,15 @@ export default function LogInClient() {
             </p>
             <p className="mb-3 p-1">
               We encourage you to focus on{" "}
-              <span className={accentClassName}>statewide issues</span> rather
-              than nationwide or local matters.
+              <span className={accentClassName}>statewide issues</span> However, we can discuss nationwide issues here as well
+              .
             </p>
             <p className="mb-3 p-1">
               We{" "}
               <span className={accentClassName}>
                 protect you from foreign influences and foreign propaganda
               </span>{" "}
-              by allowing young American citizens and American registered voters
-              only.
+              by blocking all foreign IP addresses.
             </p>
             <p className="mb-3 p-1">
               You will be exposed to perspectives from all sides.{" "}
@@ -281,7 +286,7 @@ export default function LogInClient() {
               </span>{" "}
               all while keeping an open mind and staying anonymous.
             </p>
-            <p className="mb-2 p-1">
+            {/* <p className="mb-2 p-1">
               You can also <span className={accentClassName}>role-play</span> a{" "}
               <Link href="/gamerules" className={linkClassName}>
                 realistic strategy game
@@ -291,7 +296,7 @@ export default function LogInClient() {
                 current elected state officials
               </span>
               .
-            </p>
+            </p> */}
           </section>
         </div>
 

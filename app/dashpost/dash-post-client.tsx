@@ -256,12 +256,15 @@ function MediaIconStrip({ post }: Readonly<{ post: DashPostRecord }>) {
 export function DashPostCard({
   onDeleted,
   post,
+  postHref,
 }: Readonly<{
-  onDeleted: (postId: string) => void;
+  onDeleted?: (postId: string) => void;
   post: DashPostRecord;
+  postHref?: string;
 }>) {
   const authorId = getAuthorId(post);
   const statusBadges = getStatusBadges(getAuthorStatus(post));
+  const href = postHref ?? `/post/${post.slug}`;
 
   return (
     <article className="flex h-[618px] flex-col overflow-hidden rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
@@ -276,7 +279,7 @@ export function DashPostCard({
           <StateChip state={post.state} />
           <PostDeleteButton
             compact
-            onDeleted={() => onDeleted(post._id)}
+            onDeleted={() => onDeleted?.(post._id)}
             postAuthorId={authorId}
             postId={post._id}
             redirectTo={null}
@@ -285,7 +288,7 @@ export function DashPostCard({
       </div>
 
       <Link
-        href={`/post/${post.slug}`}
+        href={href}
         className="mt-4 block min-h-0 flex-1 text-[#000000] no-underline"
       >
         <h2 className="break-words text-2xl font-semibold leading-tight text-[#000000]">
@@ -326,7 +329,7 @@ export function DashPostCard({
         </div>
 
         <Link
-          href={`/post/${post.slug}`}
+          href={href}
           className="mt-3 flex justify-end gap-1.5 text-right text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE]"
         >
           Open

@@ -22,6 +22,7 @@ import {
   VoteIcon,
 } from "lucide-react";
 
+import { DashPostCard, type DashPostRecord } from "@/app/dashpost/dash-post-client";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { ServerPixelAvatar } from "@/components/server-pixel-avatar";
 import { StateFlagIcon } from "@/components/state-flag";
@@ -40,29 +41,7 @@ type UserStatus = {
   isVoter?: boolean;
 };
 
-type MediaLink = {
-  kind?: "image" | "document" | "video";
-  label?: string;
-  url?: string;
-  videoId?: string;
-};
-
-type HomePost = {
-  _id?: string;
-  city?: string;
-  content?: string;
-  county?: string;
-  createdAt?: string;
-  isPublishable?: boolean;
-  mediaLinks?: MediaLink[];
-  pictureURL?: string;
-  slug?: string;
-  state?: string;
-  title?: string;
-  userId?: string | UserStatus;
-  username?: string;
-  videoId?: string;
-};
+type HomePost = DashPostRecord;
 
 type PostsResponse = {
   posts?: HomePost[];
@@ -71,6 +50,7 @@ type PostsResponse = {
 type HomeData = {
   isAuthenticated: boolean;
   latestPost: HomePost | null;
+  latestPosts: HomePost[];
   latestPostFailed: boolean;
 };
 
@@ -160,13 +140,6 @@ const actionPaths: ReadonlyArray<{
     icon: CircleHelpIcon,
     title: "Read FAQ",
   },
-];
-
-const scopeLevels = [
-  { label: "National", value: "Countrywide public issues" },
-  { label: "State", value: "Policy close to home" },
-  { label: "County", value: "Regional civic impact" },
-  { label: "City", value: "Local community decisions" },
 ];
 
 const stateDirectory = [
@@ -340,36 +313,39 @@ function getMediaSummary(post: HomePost) {
   };
 }
 
-async function fetchLatestPost() {
+async function fetchLatestPosts(limit: number) {
+  const params = new URLSearchParams({ limit: String(limit), order: "desc" });
+
   try {
-    const response = await fetch(serverApiUrl("/post/getposts?limit=1"), {
+    const response = await fetch(serverApiUrl(`/post/getposts?${params.toString()}`), {
       cache: "no-store",
     });
 
     if (!response.ok) {
-      return { failed: true, post: null };
+      return { failed: true, posts: [] };
     }
 
     const data = (await response.json()) as PostsResponse;
-    const post =
-      (data.posts || []).find((candidate) => candidate.isPublishable !== false) ||
-      null;
+    const posts = (data.posts || [])
+      .filter((candidate) => candidate.isPublishable !== false)
+      .slice(0, limit);
 
-    return { failed: false, post };
+    return { failed: false, posts };
   } catch {
-    return { failed: true, post: null };
+    return { failed: true, posts: [] };
   }
 }
 
-async function getHomeData(): Promise<HomeData> {
+async function getHomeData(postLimit: number): Promise<HomeData> {
   const [latestPostResult, serverUserId] = await Promise.all([
-    fetchLatestPost(),
+    fetchLatestPosts(postLimit),
     getAuthUserIdFromCookie(),
   ]);
 
   return {
     isAuthenticated: Boolean(serverUserId),
-    latestPost: latestPostResult.post,
+    latestPost: latestPostResult.posts[0] || null,
+    latestPosts: latestPostResult.posts,
     latestPostFailed: latestPostResult.failed,
   };
 }
@@ -631,7 +607,7 @@ function HeroImagePanel() {
       />
       <figcaption className="border-t border-[#c4c4c4] px-4 py-3 text-sm leading-6 text-[#333333]">
         The 2026 midterm election is coming. Be proud to vote and discuss the
-        policies that shape your community.
+        policies that shape your state.
       </figcaption>
     </figure>
   );
@@ -752,12 +728,12 @@ function ActionDesign({ data }: Readonly<{ data: HomeData }>) {
   return (
     <HomePageShell>
       <section className="border-b border-[#c4c4c4] bg-[#f7f7f7]">
-        <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_430px] lg:px-8 lg:py-18">
+        <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-2 lg:items-center lg:px-8 lg:py-18">
+          <HeroImagePanel />
+
           <div className="min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-normal text-[#4d4d4d]">
-              Home
-            </p>
-            <h1 className="mt-3 max-w-4xl break-words text-3xl font-semibold leading-tight tracking-normal text-[#000000] sm:text-5xl lg:text-6xl">
+            
+            <h1 className="mt-3 max-w-4xl break-words text-3xl font-semibold leading-tight tracking-normal text-[#000000] sm:text-5xl xl:text-6xl">
               Care about your{" "}
               <RotatingStateName className="font-semibold" />
               policies or politics?
@@ -771,62 +747,39 @@ function ActionDesign({ data }: Readonly<{ data: HomeData }>) {
                 <UserPlusIcon className="size-4" aria-hidden="true" />
                 Yes, Create An Account
               </Link>
-              <Link href="/mystate/California" className={secondaryActionClassName}>
+              {/* <Link href="/mystate/California" className={secondaryActionClassName}>
                 <MapPinnedIcon className="size-4" aria-hidden="true" />
                 See State Posts
-              </Link>
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {scopeLevels.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-md border border-[#c4c4c4] bg-[#eeeeee] px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.10)]"
-                >
-                  <p className="text-lg font-semibold text-[#000000]">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-sm leading-5 text-[#4d4d4d]">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <LatestPostCard
-            isAuthenticated={data.isAuthenticated}
-            latestPostFailed={data.latestPostFailed}
-            post={data.latestPost}
-          />
-        </div>
-      </section>
-
-      <section className="border-t border-[#c4c4c4] bg-[#eeeeee]">
-        <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8">
-          {actionPaths.map((action) => (
-            <ActionCard key={action.title} {...action} />
-          ))}
-        </div>
-      </section>
-
-      <Section eyebrow="Context" title="The Civic Brief">
-        <div className="grid gap-6 lg:grid-cols-[390px_minmax(0,1fr)] lg:items-start">
-          <HeroImagePanel />
-          <div>
-            <p>
-              The home page can behave like a working dashboard: a direct call
-              to join, a live preview of the newest post, and a clear route into
-              state-level conversation.
-            </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {civicPillars.slice(0, 2).map((pillar) => (
-                <FeatureCard key={pillar.title} {...pillar} />
-              ))}
+              </Link> */}
             </div>
           </div>
         </div>
-      </Section>
+      </section>
+
+      <section aria-labelledby="latest-posts-heading" className="border-t border-[#c4c4c4] bg-[#eeeeee] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1280px]">
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {data.latestPosts.length > 0 ? (
+              data.latestPosts.map((post) => (
+                <DashPostCard
+                  key={post._id}
+                  post={post}
+                  postHref={data.isAuthenticated ? undefined : "/log-in"}
+                />
+              ))
+            ) : (
+              <LatestPostCard
+                isAuthenticated={data.isAuthenticated}
+                latestPostFailed={data.latestPostFailed}
+                post={null}
+              />
+            )}
+          </div>
+        </div>
+      </section>
+
+      
     </HomePageShell>
   );
 }
@@ -927,7 +880,7 @@ export async function HomeLayoutDesign({
 }: Readonly<{
   variant: HomeLayoutVariant;
 }>) {
-  const data = await getHomeData();
+  const data = await getHomeData(variant === "action" ? 3 : 1);
 
   if (variant === "action") {
     return <ActionDesign data={data} />;
