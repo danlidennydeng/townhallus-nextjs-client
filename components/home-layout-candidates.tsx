@@ -724,7 +724,10 @@ function EditorialDesign({ data }: Readonly<{ data: HomeData }>) {
   );
 }
 
-function ActionDesign({ data }: Readonly<{ data: HomeData }>) {
+function ActionDesign({
+  data,
+  secondSection,
+}: Readonly<{ data: HomeData; secondSection?: React.ReactNode }>) {
   return (
     <HomePageShell>
       <section className="border-b border-[#c4c4c4] bg-[#f7f7f7]">
@@ -755,6 +758,8 @@ function ActionDesign({ data }: Readonly<{ data: HomeData }>) {
           </div>
         </div>
       </section>
+
+      {secondSection}
 
       <section aria-labelledby="latest-posts-heading" className="border-t border-[#c4c4c4] bg-[#eeeeee] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-[1280px]">
@@ -877,13 +882,15 @@ function StateDirectoryDesign({ data }: Readonly<{ data: HomeData }>) {
 
 export async function HomeLayoutDesign({
   variant,
+  secondSection,
 }: Readonly<{
   variant: HomeLayoutVariant;
+  secondSection?: React.ReactNode;
 }>) {
   const data = await getHomeData(variant === "action" ? 3 : 1);
 
   if (variant === "action") {
-    return <ActionDesign data={data} />;
+    return <ActionDesign data={data} secondSection={secondSection} />;
   }
 
   if (variant === "state") {
