@@ -1,8 +1,21 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashPostsAliasPage() {
-  redirect("/dashpost");
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/dashpost");
+  }, [router]);
+
+  return (
+    <main
+      className="flex min-h-screen flex-1 items-center justify-center bg-[#e6e6e6] px-4 py-12"
+      role="status"
+    >
+      <span className="font-semibold text-[#000000]">Opening My Posts...</span>
+    </main>
+  );
 }

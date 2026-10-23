@@ -1,4 +1,7 @@
-import { SiteFooter, SiteHeader } from "@/components/site-chrome";
+import {
+  SiteFooter,
+  SiteHeaderContent as SiteHeader,
+} from "@/components/site-chrome-content";
 
 export default function DashPostLoading() {
   const cards = Array.from({ length: 6 }, (_, index) => index);
