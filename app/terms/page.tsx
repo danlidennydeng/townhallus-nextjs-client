@@ -13,8 +13,11 @@ import {
 
 import {
   SiteFooter,
-  SiteHeader,
-} from "@/components/site-chrome";
+} from "@/components/site-chrome-content";
+import { StaticSiteHeader } from "@/components/static-site-header";
+
+export const dynamic = "error";
+export const revalidate = false;
 
 export const metadata: Metadata = {
   title: "Terms | TownHallUS.com",
@@ -241,7 +244,7 @@ function Callout({ children }: Readonly<{ children: ReactNode }>) {
 export default function TermsPage() {
   return (
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
-      <SiteHeader />
+      <StaticSiteHeader />
 
       <main className="flex-1">
         <section className="border-b border-[#c4c4c4] bg-[#f7f7f7]">

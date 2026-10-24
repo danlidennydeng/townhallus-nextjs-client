@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import About from "./about";
 
+export const dynamic = "error";
+export const revalidate = false;
+
 export const metadata: Metadata = {
   title: "About Us | TownHallUS.com",
   description:
