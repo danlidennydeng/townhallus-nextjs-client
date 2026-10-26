@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
-import { SiteFooter, SiteHeader } from "@/components/site-chrome";
-import CreateAccountClient from "./create-account-client";
+import CreateAccountPageClient from "./create-account-page-client";
+
+export const dynamic = "error";
+export const revalidate = false;
 
 export const metadata: Metadata = {
   title: "Create Account | TownHallUS.com",
@@ -10,11 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function CreateAccountPage() {
-  return (
-    <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
-      <SiteHeader />
-      <CreateAccountClient />
-      <SiteFooter />
-    </div>
-  );
+  return <CreateAccountPageClient />;
 }

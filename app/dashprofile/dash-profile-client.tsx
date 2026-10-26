@@ -73,7 +73,7 @@ const initialProfileFormData: ProfileFormData = {
 const inputClassName =
   "block h-11 w-full rounded-md border border-[#999999] bg-[#f7f7f7] px-3 text-[#000000] outline-none transition-colors placeholder:text-[#666666] focus:border-[#9333EA]";
 const textareaClassName =
-  "block min-h-32 w-full rounded-md border border-[#999999] bg-[#f7f7f7] px-3 py-2 text-[#000000] outline-none transition-colors placeholder:text-[#666666] focus:border-[#9333EA]";
+  "block h-[118px] min-h-[108px] w-full rounded-md border border-[#999999] bg-[#f7f7f7] px-3 py-2 text-[#000000] outline-none transition-colors placeholder:text-[#666666] focus:border-[#9333EA]";
 const labelClassName = "flex justify-between gap-3 font-extrabold text-[#000000]";
 const mutedLabelClassName = "text-sm font-medium text-[#4d4d4d]";
 const accentLinkClassName =
@@ -908,9 +908,11 @@ export default function DashProfileClient({
               onChange={handleChange}
               className={textareaClassName}
             />
-            <FieldError message={errors.introduction} />
+            {errors.introduction ? (
+              <FieldError message={errors.introduction} />
+            ) : null}
 
-            <div className="rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-3 text-sm italic font-semibold text-[#4d4d4d]">
+            <div className="mt-1 rounded-md border border-[#c4c4c4] bg-[#eeeeee] p-3 text-sm italic font-semibold text-[#4d4d4d]">
               {currentUser.introduction || "No self-introduction yet?"}
             </div>
           </section>
