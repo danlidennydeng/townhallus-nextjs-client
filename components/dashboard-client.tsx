@@ -7,13 +7,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import DashCommentClient, {
   dashCommentPageSize,
   type DashCommentRecord,
-} from "@/app/dashcomment/dash-comment-client";
-import DashCommentLoading from "@/app/dashcomment/loading";
+} from "@/app/dashcomments/dash-comment-client";
+import DashCommentLoading from "@/app/dashcomments/loading";
 import DashPostClient, {
   dashPostPageSize,
   type DashPostRecord,
-} from "@/app/dashpost/dash-post-client";
-import DashPostLoading from "@/app/dashpost/loading";
+} from "@/app/dashposts/dash-post-client";
+import DashPostLoading from "@/app/dashposts/loading";
 import DashProfileClient from "@/app/dashprofile/dash-profile-client";
 import type { DashboardSection } from "@/components/dashboard-page";
 import {

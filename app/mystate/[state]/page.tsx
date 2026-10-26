@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import {
   dashPostPageSize,
   type DashPostRecord,
-} from "@/app/dashpost/dash-post-client";
+} from "@/app/dashposts/dash-post-client";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { serverApiUrl } from "@/lib/api-server";
 import MyStateClient from "./my-state-client";

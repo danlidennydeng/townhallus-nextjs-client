@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
-import { SiteFooter, SiteHeader } from "@/components/site-chrome";
-import VerifyEmailClient from "./verify-email-client";
+import VerifyEmailPageClient from "./verify-email-page-client";
+
+export const dynamic = "error";
+export const revalidate = false;
 
 export const metadata: Metadata = {
   title: "Verify Email | TownHallUS.com",
@@ -10,11 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function VerifyEmailPage() {
-  return (
-    <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
-      <SiteHeader />
-      <VerifyEmailClient />
-      <SiteFooter />
-    </div>
-  );
+  return <VerifyEmailPageClient />;
 }

@@ -22,7 +22,7 @@ import {
   VoteIcon,
 } from "lucide-react";
 
-import { DashPostCard, type DashPostRecord } from "@/app/dashpost/dash-post-client";
+import { DashPostCard, type DashPostRecord } from "@/app/dashposts/dash-post-client";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { ServerPixelAvatar } from "@/components/server-pixel-avatar";
 import { StateFlagIcon } from "@/components/state-flag";

@@ -2,7 +2,6 @@
 
 import Form from "next/form";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -15,7 +14,7 @@ import {
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { DashPostCard, type DashPostRecord } from "@/app/dashpost/dash-post-client";
+import { DashPostCard, type DashPostRecord } from "@/app/dashposts/dash-post-client";
 import { Button } from "@/components/ui/button";
 import {
   postSearchHref,
@@ -31,21 +30,22 @@ const inputClassName =
 const linkClassName =
   "inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm font-semibold text-[#9333EA] underline decoration-[#808080] decoration-2 underline-offset-4 hover:text-[#7E22CE] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9333EA]";
 
-function SearchButton() {
+function SearchButton({ loading }: Readonly<{ loading: boolean }>) {
   const { pending } = useFormStatus();
+  const busy = pending || loading;
 
   return (
     <Button
       type="submit"
-      disabled={pending}
+      disabled={busy}
       className="h-11 w-full bg-[#9333EA] px-5 text-[#ffffff] hover:bg-[#7E22CE] sm:w-auto"
     >
-      {pending ? (
+      {busy ? (
         <LoaderCircleIcon className="size-4 animate-spin" aria-hidden="true" />
       ) : (
         <SearchIcon className="size-4" aria-hidden="true" />
       )}
-      {pending ? "Searching..." : "Search"}
+      {busy ? "Searching..." : "Search"}
     </Button>
   );
 }
@@ -55,6 +55,8 @@ export default function SearchClient({
   field,
   hasMore,
   initialPosts,
+  loading,
+  onRefresh,
   page,
   query,
   totalPosts,
@@ -63,11 +65,12 @@ export default function SearchClient({
   field: PostSearchField;
   hasMore: boolean;
   initialPosts: DashPostRecord[];
+  loading: boolean;
+  onRefresh: () => void;
   page: number;
   query: string;
   totalPosts: number;
 }>) {
-  const router = useRouter();
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const posts = initialPosts.filter((post) => !deletedIds.includes(post._id)).slice(0, searchPageSize);
   const count = Math.max(0, totalPosts - deletedIds.length);
@@ -75,7 +78,7 @@ export default function SearchClient({
   const selectedField = searchFields.find((option) => option.value === field)?.label;
 
   return (
-    <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+    <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12" aria-busy={loading}>
       <div className="mx-auto w-full max-w-[1280px] space-y-5">
         <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
           <div className="flex items-center justify-between gap-3">
@@ -86,7 +89,17 @@ export default function SearchClient({
             <h1 className="text-right text-sm font-bold text-[#000000]">Search Posts</h1>
           </div>
 
-          <Form action="/search" role="search" className="mt-4 grid items-end gap-4 md:grid-cols-[1fr_180px_auto]">
+          <Form
+            action="/search"
+            role="search"
+            onSubmit={(event) => {
+              const data = new FormData(event.currentTarget);
+              if (String(data.get("q") || "").trim() === query && data.get("field") === field && page === 1) {
+                onRefresh();
+              }
+            }}
+            className="mt-4 grid items-end gap-4 md:grid-cols-[1fr_180px_auto]"
+          >
             <div className="min-w-0">
               <label htmlFor="post-search-query" className="mb-2 block font-semibold">
                 Search text
@@ -118,13 +131,13 @@ export default function SearchClient({
                 ))}
               </select>
             </div>
-            <SearchButton />
+            <SearchButton loading={loading} />
           </Form>
           <p id="post-search-help" className="mt-3 text-sm leading-6 text-[#4d4d4d]">
             Search by state, title, or content. Results appear nine at a time, with the closest matches first.
           </p>
 
-          {query && !error ? (
+          {query && !error && !loading ? (
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold" aria-live="polite">
               <span className="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#999999] bg-[#eeeeee] px-3 py-2">
                 <FileTextIcon className="size-4 text-[#9333EA]" aria-hidden="true" />
@@ -137,7 +150,15 @@ export default function SearchClient({
           ) : null}
         </section>
 
-        {error ? (
+        {loading ? (
+          <section
+            role="status"
+            className="flex items-center justify-center gap-3 rounded-md border border-[#999999] bg-[#f7f7f7] px-5 py-8 font-semibold text-[#4d4d4d]"
+          >
+            <LoaderCircleIcon className="size-5 animate-spin text-[#9333EA]" aria-hidden="true" />
+            Searching posts...
+          </section>
+        ) : error ? (
           <section className="rounded-md border border-[#B91C1C] bg-[#f7f7f7] p-5" role="alert">
             <p className="flex items-start gap-2 text-sm font-semibold text-[#B91C1C]">
               <TriangleAlertIcon className="size-5 shrink-0" aria-hidden="true" />
@@ -146,7 +167,7 @@ export default function SearchClient({
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.refresh()}
+              onClick={onRefresh}
               className="mt-4 h-11 border-[#9333EA] bg-transparent text-[#000000]"
             >
               Try again
@@ -170,13 +191,16 @@ export default function SearchClient({
               <DashPostCard
                 key={post._id}
                 post={post}
-                onDeleted={(postId) => setDeletedIds((ids) => [...ids, postId])}
+                onDeleted={(postId) => {
+                  setDeletedIds((ids) => [...ids, postId]);
+                  onRefresh();
+                }}
               />
             ))}
           </section>
         )}
 
-        {query && !error && (posts.length > 0 || page > 1) ? (
+        {query && !error && !loading && (posts.length > 0 || page > 1) ? (
           <nav aria-label="Search result pages" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <p className="text-sm font-medium text-[#4d4d4d]" aria-live="polite">
               {posts.length > 0 ? `Showing ${startIndex + 1}–${startIndex + posts.length} of ${count} results` : `Page ${page}`}

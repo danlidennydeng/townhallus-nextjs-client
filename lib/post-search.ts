@@ -1,4 +1,4 @@
-import type { DashPostRecord } from "@/app/dashpost/dash-post-client";
+import type { DashPostRecord } from "@/app/dashposts/dash-post-client";
 
 export const searchPageSize = 9;
 export const searchQueryMaxLength = 200;

@@ -733,7 +733,7 @@ export default function DashProfileClient({
 
             <Button
               nativeButton={false}
-              render={<Link href="/dashpost" />}
+              render={<Link href="/dashposts" />}
               className="mt-4 w-full border-[#9333EA] bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
             >
               <ArrowRightIcon className="size-4" aria-hidden="true" />
@@ -757,7 +757,7 @@ export default function DashProfileClient({
 
             <Button
               nativeButton={false}
-              render={<Link href="/dashcomment" />}
+              render={<Link href="/dashcomments" />}
               className="mt-4 w-full border-[#9333EA] bg-[#9333EA] text-[#ffffff] hover:bg-[#7E22CE]"
             >
               <ArrowRightIcon className="size-4" aria-hidden="true" />

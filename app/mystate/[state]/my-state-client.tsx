@@ -17,7 +17,7 @@ import {
   DashPostCard,
   dashPostPageSize,
   type DashPostRecord,
-} from "@/app/dashpost/dash-post-client";
+} from "@/app/dashposts/dash-post-client";
 import { StateFlagIcon } from "@/components/state-flag";
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api-client";

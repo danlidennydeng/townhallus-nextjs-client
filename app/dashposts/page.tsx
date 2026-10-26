@@ -1,21 +1,13 @@
-"use client";
+import type { Metadata } from "next";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { DashboardPage } from "@/components/dashboard-page";
 
-export default function DashPostsAliasPage() {
-  const router = useRouter();
+export const metadata: Metadata = {
+  title: "My Posts | TownHallUS.com",
+  description:
+    "Review posts published from your TownHallUS account.",
+};
 
-  useEffect(() => {
-    router.replace("/dashpost");
-  }, [router]);
-
-  return (
-    <main
-      className="flex min-h-screen flex-1 items-center justify-center bg-[#e6e6e6] px-4 py-12"
-      role="status"
-    >
-      <span className="font-semibold text-[#000000]">Opening My Posts...</span>
-    </main>
-  );
+export default function DashPostsPage() {
+  return <DashboardPage section="posts" />;
 }
