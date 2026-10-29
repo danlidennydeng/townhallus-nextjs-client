@@ -8,7 +8,7 @@ import { StaticSiteHeader } from "@/components/static-site-header";
 import { apiUrl } from "@/lib/api-client";
 import {
   searchFields,
-  searchMaxPage,
+  searchCursorMaxLength,
   searchQueryMaxLength,
   type PostSearchField,
   type PostSearchResponse,
@@ -18,24 +18,28 @@ import SearchClient from "./search-client";
 type SearchRequest = {
   query: string;
   field: PostSearchField;
-  page: number;
+  cursor: string;
 };
 
-function SearchResults({ query, field, page }: Readonly<SearchRequest>) {
+function SearchResults({ query, field, cursor }: Readonly<SearchRequest>) {
   const validationError = query.length > searchQueryMaxLength
     ? `Use ${searchQueryMaxLength} characters or fewer for your search.`
-    : undefined;
+    : cursor && (cursor.length > searchCursorMaxLength || !/^[A-Za-z0-9_-]+$/.test(cursor))
+      ? "Invalid search cursor. Start a new search."
+      : undefined;
   const [results, setResults] = useState<PostSearchResponse>({
     posts: [],
     totalPosts: 0,
     hasMore: false,
+    nextCursor: null,
+    previousCursor: null,
   });
   const [error, setError] = useState<string | undefined>(validationError);
   const [loading, setLoading] = useState(Boolean(query) && !validationError);
   const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
-    if (!query || query.length > searchQueryMaxLength) {
+    if (!query || validationError) {
       return;
     }
 
@@ -48,7 +52,8 @@ function SearchResults({ query, field, page }: Readonly<SearchRequest>) {
       setError(undefined);
 
       try {
-        const params = new URLSearchParams({ q: query, field, page: String(page) });
+        const params = new URLSearchParams({ q: query, field });
+        if (cursor) params.set("cursor", cursor);
         const response = await fetch(apiUrl(`/post/search?${params.toString()}`), {
           credentials: "include",
           cache: "no-store",
@@ -56,7 +61,10 @@ function SearchResults({ query, field, page }: Readonly<SearchRequest>) {
         });
 
         if (!response.ok) {
-          throw new Error("Search failed");
+          if (response.status === 400 && cursor) {
+            throw new Error("Invalid search cursor. Start a new search.");
+          }
+          throw new Error("Search is temporarily unavailable. Please try again.");
         }
 
         const data = (await response.json()) as PostSearchResponse;
@@ -64,9 +72,11 @@ function SearchResults({ query, field, page }: Readonly<SearchRequest>) {
         if (!ignore) {
           setResults(data);
         }
-      } catch {
+      } catch (error) {
         if (!ignore) {
-          setError("Search is temporarily unavailable. Please try again.");
+          setError(error instanceof Error && error.message === "Invalid search cursor. Start a new search."
+            ? error.message
+            : "Search is temporarily unavailable. Please try again.");
         }
       } finally {
         window.clearTimeout(timeout);
@@ -83,18 +93,19 @@ function SearchResults({ query, field, page }: Readonly<SearchRequest>) {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [query, field, page, refreshCount]);
+  }, [query, field, cursor, refreshCount, validationError]);
 
   return (
     <SearchClient
-      key={JSON.stringify([query, field, page, results.posts.map((post) => post._id)])}
+      key={JSON.stringify([query, field, cursor, results.posts.map((post) => post._id)])}
+      cursor={cursor}
       error={error}
       field={field}
-      hasMore={results.hasMore}
+      nextCursor={results.nextCursor}
+      previousCursor={results.previousCursor}
       initialPosts={results.posts}
       loading={loading}
       onRefresh={() => setRefreshCount((count) => count + 1)}
-      page={page}
       query={query}
       totalPosts={results.totalPosts}
     />
@@ -109,19 +120,18 @@ export default function SearchView() {
   };
   const query = singleValue("q").trim();
   const field = searchFields.find((option) => option.value === singleValue("field"))?.value || "all";
-  const requestedPage = Number(singleValue("page") || 1);
-  const page = Number.isSafeInteger(requestedPage) && requestedPage >= 1 && requestedPage <= searchMaxPage
-    ? requestedPage
-    : 1;
+  // Older page-number URLs start at the first page of the same search.
+  const cursorValues = searchParams.getAll("cursor");
+  const cursor = cursorValues.length > 1 ? "!" : cursorValues[0] || "";
 
   return (
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
       <StaticSiteHeader />
       <SearchResults
-        key={JSON.stringify([query, field, page])}
+        key={JSON.stringify([query, field, cursor])}
         query={query}
         field={field}
-        page={page}
+        cursor={cursor}
       />
       <SiteFooter />
     </div>

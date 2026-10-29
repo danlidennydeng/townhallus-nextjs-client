@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import {
   postSearchHref,
   searchFields,
-  searchMaxPage,
   searchPageSize,
   searchQueryMaxLength,
   type PostSearchField,
@@ -52,23 +51,25 @@ function SearchButton({ loading }: Readonly<{ loading: boolean }>) {
 }
 
 export default function SearchClient({
+  cursor,
   error,
   field,
-  hasMore,
+  nextCursor,
+  previousCursor,
   initialPosts,
   loading,
   onRefresh,
-  page,
   query,
   totalPosts,
 }: Readonly<{
+  cursor: string;
   error?: string;
   field: PostSearchField;
-  hasMore: boolean;
+  nextCursor: string | null;
+  previousCursor: string | null;
   initialPosts: DashPostRecord[];
   loading: boolean;
   onRefresh: () => void;
-  page: number;
   query: string;
   totalPosts: number;
 }>) {
@@ -76,7 +77,6 @@ export default function SearchClient({
   const highlightText = useMemo(() => createSearchHighlighter(query), [query]);
   const posts = initialPosts.filter((post) => !deletedIds.includes(post._id)).slice(0, searchPageSize);
   const count = Math.max(0, totalPosts - deletedIds.length);
-  const startIndex = (page - 1) * searchPageSize;
   const selectedField = searchFields.find((option) => option.value === field)?.label;
 
   return (
@@ -96,7 +96,7 @@ export default function SearchClient({
             role="search"
             onSubmit={(event) => {
               const data = new FormData(event.currentTarget);
-              if (String(data.get("q") || "").trim() === query && data.get("field") === field && page === 1) {
+              if (String(data.get("q") || "").trim() === query && data.get("field") === field && !cursor) {
                 onRefresh();
               }
             }}
@@ -174,6 +174,11 @@ export default function SearchClient({
             >
               Try again
             </Button>
+            {cursor ? (
+              <Link href={postSearchHref(query, field)} prefetch={false} className={`${linkClassName} ml-3 mt-4`}>
+                Start a new search
+              </Link>
+            ) : null}
           </section>
         ) : !query || posts.length === 0 ? (
           <section className="rounded-md border border-[#999999] bg-[#f7f7f7] p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
@@ -181,7 +186,7 @@ export default function SearchClient({
               {!query ? <SearchIcon className="size-7" aria-hidden="true" /> : <InboxIcon className="size-7" aria-hidden="true" />}
             </span>
             <h2 className="mt-4 text-2xl font-semibold">
-              {!query ? "Find posts" : page > 1 ? "No more results on this page." : "No matching posts."}
+              {!query ? "Find posts" : cursor ? "No more results on this page." : "No matching posts."}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#4d4d4d]">
               {!query ? "Enter search text above to explore posts." : "Try different words or search in all fields."}
@@ -205,20 +210,25 @@ export default function SearchClient({
           </section>
         )}
 
-        {query && !error && !loading && (posts.length > 0 || page > 1) ? (
+        {query && !error && !loading && (posts.length > 0 || cursor) ? (
           <nav aria-label="Search result pages" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
             <p className="text-sm font-medium text-[#4d4d4d]" aria-live="polite">
-              {posts.length > 0 ? `Showing ${startIndex + 1}–${startIndex + posts.length} of ${count} results` : `Page ${page}`}
+              {posts.length > 0 ? `Showing ${posts.length} of ${count} results` : "No results on this page"}
             </p>
             <div className="ml-auto flex items-center gap-4">
-              {page > 1 ? (
-                <Link href={postSearchHref(query, field, page - 1)} prefetch={false} className={linkClassName}>
+              {previousCursor ? (
+                <Link href={postSearchHref(query, field, previousCursor)} prefetch={false} className={linkClassName}>
                   <ArrowLeftIcon className="size-4" aria-hidden="true" />
                   Previous
                 </Link>
               ) : null}
-              {hasMore && page < searchMaxPage ? (
-                <Link href={postSearchHref(query, field, page + 1)} prefetch={false} className={linkClassName}>
+              {cursor && !previousCursor ? (
+                <Link href={postSearchHref(query, field)} prefetch={false} className={linkClassName}>
+                  First results
+                </Link>
+              ) : null}
+              {nextCursor ? (
+                <Link href={postSearchHref(query, field, nextCursor)} prefetch={false} className={linkClassName}>
                   More
                   <ArrowRightIcon className="size-4" aria-hidden="true" />
                 </Link>

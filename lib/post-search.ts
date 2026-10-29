@@ -2,7 +2,7 @@ import type { DashPostRecord } from "@/app/dashposts/dash-post-client";
 
 export const searchPageSize = 9;
 export const searchQueryMaxLength = 200;
-export const searchMaxPage = 10000;
+export const searchCursorMaxLength = 4096;
 export const searchFields = [
   { value: "all", label: "All fields" },
   { value: "state", label: "State" },
@@ -16,12 +16,14 @@ export type PostSearchResponse = {
   posts: DashPostRecord[];
   totalPosts: number;
   hasMore: boolean;
+  nextCursor: string | null;
+  previousCursor: string | null;
 };
 
-export function postSearchHref(query: string, field: PostSearchField, page = 1) {
+export function postSearchHref(query: string, field: PostSearchField, cursor?: string | null) {
   const params = new URLSearchParams({ q: query, field });
-  if (page > 1) {
-    params.set("page", String(page));
+  if (cursor) {
+    params.set("cursor", cursor);
   }
   return `/search?${params.toString()}`;
 }
