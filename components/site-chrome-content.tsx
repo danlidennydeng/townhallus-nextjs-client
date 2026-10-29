@@ -22,6 +22,7 @@ const footerLinks = [
   { href: "/faqpage", label: "FAQ" },
   { href: "/helppage", label: "Help" },
   { href: "/privacy", label: "Privacy & Cookie" },
+  { href: "/cookie-warning", label: "Cookie settings" },
   { href: "/terms", label: "Term" },
   { href: "/userrules", label: "User Rules" },
 ];
