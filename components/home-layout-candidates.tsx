@@ -22,13 +22,15 @@ import {
   VoteIcon,
 } from "lucide-react";
 
-import { DashPostCard, type DashPostRecord } from "@/app/dashposts/dash-post-client";
+import type { DashPostRecord } from "@/app/dashposts/dash-post-client";
+import HomePostsClient from "@/components/home-posts-client";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { ServerPixelAvatar } from "@/components/server-pixel-avatar";
 import { StateFlagIcon } from "@/components/state-flag";
 import { RotatingStateName } from "@/components/home-state-spotlight";
 import { serverApiUrl } from "@/lib/api-server";
 import { getAuthUserIdFromCookie } from "@/lib/auth-server";
+import type { CursorFeedResponse } from "@/lib/cursor-feed";
 
 type HomeLayoutVariant = "editorial" | "action" | "state";
 
@@ -43,15 +45,12 @@ type UserStatus = {
 
 type HomePost = DashPostRecord;
 
-type PostsResponse = {
-  posts?: HomePost[];
-};
-
 type HomeData = {
   isAuthenticated: boolean;
   latestPost: HomePost | null;
   latestPosts: HomePost[];
   latestPostFailed: boolean;
+  nextCursor: string | null;
 };
 
 type StatusBadgeConfig = {
@@ -314,25 +313,23 @@ function getMediaSummary(post: HomePost) {
 }
 
 async function fetchLatestPosts(limit: number) {
-  const params = new URLSearchParams({ limit: String(limit), order: "desc" });
-
   try {
-    const response = await fetch(serverApiUrl(`/post/getposts?${params.toString()}`), {
+    const response = await fetch(serverApiUrl("/post/home-feed"), {
       cache: "no-store",
     });
 
     if (!response.ok) {
-      return { failed: true, posts: [] };
+      return { failed: true, posts: [], nextCursor: null };
     }
 
-    const data = (await response.json()) as PostsResponse;
-    const posts = (data.posts || [])
+    const data = (await response.json()) as CursorFeedResponse<HomePost>;
+    const posts = (data.items || [])
       .filter((candidate) => candidate.isPublishable !== false)
       .slice(0, limit);
 
-    return { failed: false, posts };
+    return { failed: false, posts, nextCursor: data.hasMore ? data.nextCursor : null };
   } catch {
-    return { failed: true, posts: [] };
+    return { failed: true, posts: [], nextCursor: null };
   }
 }
 
@@ -347,6 +344,7 @@ async function getHomeData(postLimit: number): Promise<HomeData> {
     latestPost: latestPostResult.posts[0] || null,
     latestPosts: latestPostResult.posts,
     latestPostFailed: latestPostResult.failed,
+    nextCursor: latestPostResult.nextCursor,
   };
 }
 
@@ -764,23 +762,19 @@ function ActionDesign({
       <section aria-labelledby="latest-posts-heading" className="border-t border-[#c4c4c4] bg-[#eeeeee] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-[1280px]">
           
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {data.latestPosts.length > 0 ? (
-              data.latestPosts.map((post) => (
-                <DashPostCard
-                  key={post._id}
-                  post={post}
-                  postHref={data.isAuthenticated ? undefined : "/log-in"}
-                />
-              ))
-            ) : (
+          <HomePostsClient
+            initialPosts={data.latestPosts}
+            initialNextCursor={data.nextCursor}
+            isAuthenticated={data.isAuthenticated}
+            showPagination={false}
+            emptyState={
               <LatestPostCard
                 isAuthenticated={data.isAuthenticated}
                 latestPostFailed={data.latestPostFailed}
                 post={null}
               />
-            )}
-          </div>
+            }
+          />
         </div>
       </section>
 

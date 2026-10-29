@@ -11,30 +11,25 @@ import {
   PenLineIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   DashPostCard,
-  dashPostPageSize,
   type DashPostRecord,
 } from "@/app/dashposts/dash-post-client";
 import { StateFlagIcon } from "@/components/state-flag";
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api-client";
+import { statePostsPath, type StatePostsResponse } from "@/lib/state-posts";
 import {
   getStoredUser,
   subscribeToAuthChanges,
   type TownHallUser,
 } from "@/lib/auth-client";
 
-type PostsResponse = {
-  posts?: DashPostRecord[];
-  totalPosts?: number;
-};
-
 type MyStateClientProps = {
   initialFetchFailed?: boolean;
-  initialHasMore: boolean;
+  initialNextCursor: string | null;
   initialPosts: DashPostRecord[];
   initialTotalPosts: number;
   stateName: string;
@@ -68,15 +63,16 @@ function EmptyStatePosts({ canCreate, stateName }: Readonly<{
 
 export default function MyStateClient({
   initialFetchFailed = false,
-  initialHasMore,
+  initialNextCursor,
   initialPosts,
   initialTotalPosts,
   stateName,
 }: Readonly<MyStateClientProps>) {
   const [posts, setPosts] = useState(initialPosts);
   const [totalPosts, setTotalPosts] = useState(initialTotalPosts);
-  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
+  const activeRequest = useRef<AbortController | null>(null);
   const [loadError, setLoadError] = useState(
     initialFetchFailed ? "Posts could not be loaded." : ""
   );
@@ -84,6 +80,9 @@ export default function MyStateClient({
   const canCreate = Boolean(currentUser?.isPoster);
   const userState = currentUser?.state?.trim();
   const isNationwide = stateName.trim().toLowerCase() === "nationwide";
+  const hasMore = nextCursor !== null;
+
+  useEffect(() => () => activeRequest.current?.abort(), []);
 
   useEffect(() => {
     function syncUser() {
@@ -99,57 +98,68 @@ export default function MyStateClient({
   }, [totalPosts]);
 
   const loadMorePosts = useCallback(async () => {
-    if (!hasMore || loadingMore) {
+    if (!nextCursor || activeRequest.current) {
       return;
     }
 
+    const controller = new AbortController();
+    activeRequest.current = controller;
     setLoadingMore(true);
     setLoadError("");
 
     try {
-      const params = new URLSearchParams({
-        limit: String(dashPostPageSize),
-        startIndex: String(posts.length),
-        state: stateName,
-      });
-      const response = await fetch(apiUrl(`/post/getposts?${params.toString()}`), {
+      const response = await fetch(apiUrl(statePostsPath(stateName, nextCursor)), {
         credentials: "include",
         method: "GET",
+        signal: controller.signal,
       });
+
+      if (controller.signal.aborted) {
+        return;
+      }
 
       if (!response.ok) {
         setLoadError("More posts could not be loaded.");
         return;
       }
 
-      const data = (await response.json()) as PostsResponse;
-      const nextPosts = data.posts || [];
-      const nextTotalPosts =
-        typeof data.totalPosts === "number" ? data.totalPosts : totalPosts;
-      const currentIds = new Set(posts.map((post) => post._id));
-      const mergedPosts = [
-        ...posts,
-        ...nextPosts.filter((post) => !currentIds.has(post._id)),
-      ];
+      const data = (await response.json()) as StatePostsResponse;
+      if (controller.signal.aborted) {
+        return;
+      }
 
-      setPosts(mergedPosts);
-      setTotalPosts(nextTotalPosts);
-      setHasMore(nextTotalPosts > mergedPosts.length);
+      if (data.hasMore && (!data.nextCursor || data.nextCursor === nextCursor)) {
+        throw new Error("Posts cursor did not advance.");
+      }
+
+      const nextPosts = data.posts || [];
+
+      setPosts((current) => {
+        const currentIds = new Set(current.map((post) => post._id));
+        return [...current, ...nextPosts.filter((post) => !currentIds.has(post._id))];
+      });
+      if (typeof data.totalPosts === "number") {
+        setTotalPosts(data.totalPosts);
+      }
+      setNextCursor(data.hasMore ? data.nextCursor : null);
     } catch {
-      setLoadError("More posts could not be loaded.");
+      if (!controller.signal.aborted) {
+        setLoadError("More posts could not be loaded.");
+      }
     } finally {
-      setLoadingMore(false);
+      activeRequest.current = null;
+      if (!controller.signal.aborted) {
+        setLoadingMore(false);
+      }
     }
-  }, [hasMore, loadingMore, posts, stateName, totalPosts]);
+  }, [nextCursor, stateName]);
 
   function handleDeleted(postId: string) {
     const wasLoaded = posts.some((post) => post._id === postId);
-    const nextPosts = posts.filter((post) => post._id !== postId);
-    const nextTotalPosts = wasLoaded ? Math.max(0, totalPosts - 1) : totalPosts;
-
-    setPosts(nextPosts);
-    setTotalPosts(nextTotalPosts);
-    setHasMore(nextTotalPosts > nextPosts.length);
+    setPosts((current) => current.filter((post) => post._id !== postId));
+    if (wasLoaded) {
+      setTotalPosts((current) => Math.max(0, current - 1));
+    }
   }
 
   return (

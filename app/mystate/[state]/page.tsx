@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 
-import {
-  dashPostPageSize,
-  type DashPostRecord,
-} from "@/app/dashposts/dash-post-client";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { serverApiUrl } from "@/lib/api-server";
+import { statePostsPath, type StatePostsResponse } from "@/lib/state-posts";
 import MyStateClient from "./my-state-client";
 
 export const dynamic = "force-dynamic";
@@ -13,11 +10,6 @@ export const revalidate = 0;
 
 type MyStatePageParams = {
   state: string;
-};
-
-type PostsResponse = {
-  posts?: DashPostRecord[];
-  totalPosts?: number;
 };
 
 function normalizeStateParam(value: string) {
@@ -46,31 +38,28 @@ export async function generateMetadata({
 }
 
 async function fetchStatePosts(stateName: string) {
-  const params = new URLSearchParams({
-    limit: String(dashPostPageSize),
-    startIndex: "0",
-    state: stateName,
-  });
+  const emptyResult = { failed: true, posts: [], totalPosts: 0, nextCursor: null };
 
   try {
-    const response = await fetch(serverApiUrl(`/post/getposts?${params.toString()}`), {
+    const response = await fetch(serverApiUrl(statePostsPath(stateName)), {
       cache: "no-store",
     });
 
     if (!response.ok) {
-      return { failed: true, posts: [], totalPosts: 0 };
+      return emptyResult;
     }
 
-    const data = (await response.json()) as PostsResponse;
+    const data = (await response.json()) as StatePostsResponse;
     const posts = data.posts || [];
 
     return {
       failed: false,
       posts,
       totalPosts: typeof data.totalPosts === "number" ? data.totalPosts : posts.length,
+      nextCursor: data.hasMore ? data.nextCursor : null,
     };
   } catch {
-    return { failed: true, posts: [], totalPosts: 0 };
+    return emptyResult;
   }
 }
 
@@ -81,7 +70,7 @@ export default async function MyStatePage({
 }>) {
   const { state } = await params;
   const stateName = normalizeStateParam(state);
-  const { failed, posts, totalPosts } = await fetchStatePosts(stateName);
+  const { failed, posts, totalPosts, nextCursor } = await fetchStatePosts(stateName);
 
   return (
     <div className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#e6e6e6] text-[#000000]">
@@ -89,7 +78,7 @@ export default async function MyStatePage({
       <MyStateClient
         key={stateName}
         initialFetchFailed={failed}
-        initialHasMore={totalPosts > posts.length}
+        initialNextCursor={nextCursor}
         initialPosts={posts}
         initialTotalPosts={totalPosts}
         stateName={stateName}

@@ -11,7 +11,7 @@ import {
   SearchIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { DashPostCard, type DashPostRecord } from "@/app/dashposts/dash-post-client";
@@ -24,6 +24,7 @@ import {
   searchQueryMaxLength,
   type PostSearchField,
 } from "@/lib/post-search";
+import { createSearchHighlighter } from "./search-highlight";
 
 const inputClassName =
   "h-11 w-full min-w-0 rounded-md border border-[#999999] bg-[#f7f7f7] px-3 text-[#000000] outline-none placeholder:text-[#666666] focus:border-[#9333EA] focus:ring-1 focus:ring-[#9333EA]";
@@ -72,6 +73,7 @@ export default function SearchClient({
   totalPosts: number;
 }>) {
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const highlightText = useMemo(() => createSearchHighlighter(query), [query]);
   const posts = initialPosts.filter((post) => !deletedIds.includes(post._id)).slice(0, searchPageSize);
   const count = Math.max(0, totalPosts - deletedIds.length);
   const startIndex = (page - 1) * searchPageSize;
@@ -191,6 +193,9 @@ export default function SearchClient({
               <DashPostCard
                 key={post._id}
                 post={post}
+                renderText={(text, textField) => (
+                  field === "all" || field === textField ? highlightText(text) : text
+                )}
                 onDeleted={(postId) => {
                   setDeletedIds((ids) => [...ids, postId]);
                   onRefresh();

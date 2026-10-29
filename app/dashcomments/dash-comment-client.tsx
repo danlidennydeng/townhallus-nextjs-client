@@ -14,10 +14,11 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api-client";
+import { useCursorFeed } from "@/hooks/use-cursor-feed";
 import type { TownHallUser } from "@/lib/auth-client";
 import { pixelAvatarPath } from "@/lib/avatar";
 
@@ -49,11 +50,6 @@ export type DashCommentRecord = {
   username?: string;
 };
 
-type CommentsResponse = {
-  comments?: DashCommentRecord[];
-  totalComments?: number;
-};
-
 type StatusBadgeConfig = {
   label: string;
   rounded: "full" | "md";
@@ -63,9 +59,8 @@ type StatusBadgeConfig = {
 type DashCommentClientProps = {
   initialComments: DashCommentRecord[];
   initialFetchFailed?: boolean;
-  initialHasMore: boolean;
+  initialNextCursor: string | null;
   initialTotalComments: number;
-  userId: string;
 };
 
 function getCommentUserId(comment: DashCommentRecord) {
@@ -269,17 +264,25 @@ function EmptyComments() {
 export default function DashCommentClient({
   initialComments,
   initialFetchFailed = false,
-  initialHasMore,
+  initialNextCursor,
   initialTotalComments,
-  userId,
 }: Readonly<DashCommentClientProps>) {
-  const [comments, setComments] = useState(initialComments);
-  const [totalComments, setTotalComments] = useState(initialTotalComments);
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadError, setLoadError] = useState(
-    initialFetchFailed ? "Comments could not be loaded." : ""
-  );
+  const {
+    items: comments,
+    totalItems: totalComments,
+    hasMore,
+    loadingMore,
+    loadError,
+    loadMore: loadMoreComments,
+    removeItem: removeComment,
+  } = useCursorFeed({
+    path: "/comment/my-comments",
+    initialItems: initialComments,
+    initialNextCursor,
+    initialTotalItems: initialTotalComments,
+    initialError: initialFetchFailed ? "Comments could not be loaded." : "",
+    loadErrorMessage: "More comments could not be loaded.",
+  });
   const [commentToDelete, setCommentToDelete] = useState<string>();
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
@@ -287,54 +290,6 @@ export default function DashCommentClient({
   const shownLabel = useMemo(() => {
     return `${totalComments} ${totalComments === 1 ? "comment" : "comments"}`;
   }, [totalComments]);
-
-  const loadMoreComments = useCallback(async () => {
-    if (!hasMore || loadingMore) {
-      return;
-    }
-
-    setLoadingMore(true);
-    setLoadError("");
-
-    try {
-      const params = new URLSearchParams({
-        limit: String(dashCommentPageSize),
-        startIndex: String(comments.length),
-      });
-      const response = await fetch(
-        apiUrl(`/comment/getUserComments/${userId}?${params.toString()}`),
-        {
-          credentials: "include",
-          method: "GET",
-        }
-      );
-
-      if (!response.ok) {
-        setLoadError("More comments could not be loaded.");
-        return;
-      }
-
-      const data = (await response.json()) as CommentsResponse;
-      const nextComments = data.comments || [];
-      const nextTotalComments =
-        typeof data.totalComments === "number"
-          ? data.totalComments
-          : totalComments;
-      const currentIds = new Set(comments.map((comment) => comment._id));
-      const mergedComments = [
-        ...comments,
-        ...nextComments.filter((comment) => !currentIds.has(comment._id)),
-      ];
-
-      setComments(mergedComments);
-      setTotalComments(nextTotalComments);
-      setHasMore(nextTotalComments > mergedComments.length);
-    } catch {
-      setLoadError("More comments could not be loaded.");
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [comments, hasMore, loadingMore, totalComments, userId]);
 
   async function handleDeleteComment() {
     if (!commentToDelete) {
@@ -360,17 +315,7 @@ export default function DashCommentClient({
         return;
       }
 
-      const wasLoaded = comments.some((comment) => comment._id === commentToDelete);
-      const nextComments = comments.filter(
-        (comment) => comment._id !== commentToDelete
-      );
-      const nextTotalComments = wasLoaded
-        ? Math.max(0, totalComments - 1)
-        : totalComments;
-
-      setComments(nextComments);
-      setTotalComments(nextTotalComments);
-      setHasMore(nextTotalComments > nextComments.length);
+      removeComment(commentToDelete);
       setCommentToDelete(undefined);
     } catch {
       setDeleteError("Comment could not be deleted.");

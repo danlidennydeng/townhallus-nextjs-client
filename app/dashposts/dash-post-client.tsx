@@ -14,12 +14,12 @@ import {
   TriangleAlertIcon,
   VideoIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import PostDeleteButton from "@/app/post/[postSlug]/post-delete-button";
 import { Button } from "@/components/ui/button";
 import { StateFlagIcon } from "@/components/state-flag";
-import { apiUrl } from "@/lib/api-client";
+import { useCursorFeed } from "@/hooks/use-cursor-feed";
 import {
   getStoredUser,
   subscribeToAuthChanges,
@@ -63,11 +63,6 @@ export type DashPostRecord = {
   videoId?: string;
 };
 
-type PostsResponse = {
-  posts?: DashPostRecord[];
-  totalPosts?: number;
-};
-
 type StatusBadgeConfig = {
   label: string;
   rounded: "full" | "md";
@@ -76,10 +71,9 @@ type StatusBadgeConfig = {
 
 type DashPostClientProps = {
   initialFetchFailed?: boolean;
-  initialHasMore: boolean;
+  initialNextCursor: string | null;
   initialPosts: DashPostRecord[];
   initialTotalPosts: number;
-  userId: string;
 };
 
 function getAuthorId(post: DashPostRecord) {
@@ -186,7 +180,7 @@ function getMediaSummary(post: DashPostRecord) {
   };
 }
 
-function StateChip({ state }: Readonly<{ state?: string }>) {
+function StateChip({ state, label }: Readonly<{ state?: string; label?: ReactNode }>) {
   if (!state) {
     return null;
   }
@@ -197,7 +191,7 @@ function StateChip({ state }: Readonly<{ state?: string }>) {
       className="inline-flex items-center gap-1.5 rounded-md border border-[#9333EA] bg-[#eeeeee] px-3 py-1 text-sm font-semibold text-[#9333EA] transition-colors hover:bg-[#d6d6d6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9333EA]"
     >
       <StateFlagIcon state={state} />
-      {state}
+      {label ?? state}
     </Link>
   );
 }
@@ -257,14 +251,18 @@ export function DashPostCard({
   onDeleted,
   post,
   postHref,
+  renderText,
 }: Readonly<{
   onDeleted?: (postId: string) => void;
   post: DashPostRecord;
   postHref?: string;
+  renderText?: (text: string, field: "state" | "title" | "content") => ReactNode;
 }>) {
   const authorId = getAuthorId(post);
   const statusBadges = getStatusBadges(getAuthorStatus(post));
   const href = postHref ?? `/post/${post.slug}`;
+  const title = post.title || "Untitled post";
+  const preview = getPostPreview(post.content);
 
   return (
     <article className="flex h-[618px] flex-col overflow-hidden rounded-md border border-[#999999] bg-[#f7f7f7] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.14)]">
@@ -276,7 +274,7 @@ export function DashPostCard({
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <StateChip state={post.state} />
+          <StateChip state={post.state} label={post.state ? renderText?.(post.state, "state") : undefined} />
           <PostDeleteButton
             compact
             onDeleted={() => onDeleted?.(post._id)}
@@ -292,10 +290,10 @@ export function DashPostCard({
         className="mt-4 block min-h-0 flex-1 text-[#000000] no-underline"
       >
         <h2 className="break-words text-2xl font-semibold leading-tight text-[#000000]">
-          {post.title || "Untitled post"}
+          {post.title ? renderText?.(title, "title") ?? title : title}
         </h2>
         <p className="mt-3 line-clamp-2 break-words text-base leading-7 text-[#333333]">
-          {getPostPreview(post.content)}
+          {post.content ? renderText?.(preview, "content") ?? preview : preview}
         </p>
       </Link>
 
@@ -365,18 +363,26 @@ function EmptyPosts({ canCreate }: Readonly<{ canCreate: boolean }>) {
 
 export default function DashPostClient({
   initialFetchFailed = false,
-  initialHasMore,
+  initialNextCursor,
   initialPosts,
   initialTotalPosts,
-  userId,
 }: Readonly<DashPostClientProps>) {
-  const [posts, setPosts] = useState(initialPosts);
-  const [totalPosts, setTotalPosts] = useState(initialTotalPosts);
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadError, setLoadError] = useState(
-    initialFetchFailed ? "Posts could not be loaded." : ""
-  );
+  const {
+    items: posts,
+    totalItems: totalPosts,
+    hasMore,
+    loadingMore,
+    loadError,
+    loadMore: loadMorePosts,
+    removeItem: handleDeleted,
+  } = useCursorFeed({
+    path: "/post/my-posts",
+    initialItems: initialPosts,
+    initialNextCursor,
+    initialTotalItems: initialTotalPosts,
+    initialError: initialFetchFailed ? "Posts could not be loaded." : "",
+    loadErrorMessage: "More posts could not be loaded.",
+  });
   const [currentUser, setCurrentUser] = useState<TownHallUser | null>(null);
   const canCreate = Boolean(currentUser?.isPoster);
 
@@ -392,60 +398,6 @@ export default function DashPostClient({
   const shownLabel = useMemo(() => {
     return `${totalPosts} ${totalPosts === 1 ? "post" : "posts"}`;
   }, [totalPosts]);
-
-  const loadMorePosts = useCallback(async () => {
-    if (!hasMore || loadingMore) {
-      return;
-    }
-
-    setLoadingMore(true);
-    setLoadError("");
-
-    try {
-      const params = new URLSearchParams({
-        limit: String(dashPostPageSize),
-        startIndex: String(posts.length),
-        userId,
-      });
-      const response = await fetch(apiUrl(`/post/getposts?${params.toString()}`), {
-        credentials: "include",
-        method: "GET",
-      });
-
-      if (!response.ok) {
-        setLoadError("More posts could not be loaded.");
-        return;
-      }
-
-      const data = (await response.json()) as PostsResponse;
-      const nextPosts = data.posts || [];
-      const nextTotalPosts =
-        typeof data.totalPosts === "number" ? data.totalPosts : totalPosts;
-      const currentIds = new Set(posts.map((post) => post._id));
-      const mergedPosts = [
-        ...posts,
-        ...nextPosts.filter((post) => !currentIds.has(post._id)),
-      ];
-
-      setPosts(mergedPosts);
-      setTotalPosts(nextTotalPosts);
-      setHasMore(nextTotalPosts > mergedPosts.length);
-    } catch {
-      setLoadError("More posts could not be loaded.");
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [hasMore, loadingMore, posts, totalPosts, userId]);
-
-  function handleDeleted(postId: string) {
-    const wasLoaded = posts.some((post) => post._id === postId);
-    const nextPosts = posts.filter((post) => post._id !== postId);
-    const nextTotalPosts = wasLoaded ? Math.max(0, totalPosts - 1) : totalPosts;
-
-    setPosts(nextPosts);
-    setTotalPosts(nextTotalPosts);
-    setHasMore(nextTotalPosts > nextPosts.length);
-  }
 
   return (
     <main className="flex flex-1 bg-[#e6e6e6] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">

@@ -5,12 +5,10 @@ import { FileTextIcon, LogInIcon, MessageSquareTextIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import DashCommentClient, {
-  dashCommentPageSize,
   type DashCommentRecord,
 } from "@/app/dashcomments/dash-comment-client";
 import DashCommentLoading from "@/app/dashcomments/loading";
 import DashPostClient, {
-  dashPostPageSize,
   type DashPostRecord,
 } from "@/app/dashposts/dash-post-client";
 import DashPostLoading from "@/app/dashposts/loading";
@@ -23,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiUrl } from "@/lib/api-client";
 import { getStoredUser } from "@/lib/auth-client";
+import type { CursorFeedResponse } from "@/lib/cursor-feed";
 
 type Collection = "posts" | "comments";
 
@@ -31,6 +30,7 @@ type CollectionResponse = {
   totalPosts?: number;
   comments?: DashCommentRecord[];
   totalComments?: number;
+  nextCursor?: string | null;
 };
 
 type CollectionState = {
@@ -77,18 +77,9 @@ function useDashboardCollection(collection: Collection) {
           return;
         }
 
-        const params = new URLSearchParams({
-          limit: String(collection === "posts" ? dashPostPageSize : dashCommentPageSize),
-          startIndex: "0",
-        });
-
-        if (collection === "posts") {
-          params.set("userId", userId);
-        }
-
         const path = collection === "posts"
-          ? `/post/getposts?${params.toString()}`
-          : `/comment/getUserComments/${userId}?${params.toString()}`;
+          ? "/post/my-posts"
+          : "/comment/my-comments";
 
         const response = await fetch(apiUrl(path), {
           credentials: "include",
@@ -96,10 +87,18 @@ function useDashboardCollection(collection: Collection) {
         });
 
         if (!response.ok) {
+          if (response.status === 401 && !controller.signal.aborted) {
+            setState({ loading: false, userId: null, failed: false, data: {} });
+            return;
+          }
           throw new Error("Dashboard data could not be loaded.");
         }
 
-        const data = (await response.json()) as CollectionResponse;
+        const page = (await response.json()) as CursorFeedResponse<DashPostRecord | DashCommentRecord>;
+        const data: CollectionResponse = collection === "posts"
+          ? { posts: page.items as DashPostRecord[], totalPosts: page.totalItems }
+          : { comments: page.items as DashCommentRecord[], totalComments: page.totalItems };
+        data.nextCursor = page.hasMore ? page.nextCursor : null;
 
         if (!controller.signal.aborted) {
           setState({ loading: false, userId, failed: false, data });
@@ -178,10 +177,9 @@ function PostsDashboard() {
     <DashboardShell userId={userId}>
       <DashPostClient
         initialFetchFailed={failed}
-        initialHasMore={totalPosts > posts.length}
+        initialNextCursor={data.nextCursor ?? null}
         initialPosts={posts}
         initialTotalPosts={totalPosts}
-        userId={userId}
       />
     </DashboardShell>
   );
@@ -208,9 +206,8 @@ function CommentsDashboard() {
       <DashCommentClient
         initialComments={comments}
         initialFetchFailed={failed}
-        initialHasMore={totalComments > comments.length}
+        initialNextCursor={data.nextCursor ?? null}
         initialTotalComments={totalComments}
-        userId={userId}
       />
     </DashboardShell>
   );
