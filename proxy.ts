@@ -14,9 +14,17 @@ export function proxy(request: NextRequest) {
   const rawCountry = request.headers.get("x-vercel-ip-country");
   const country = rawCountry?.trim().toUpperCase();
 
-  // Local next dev does not receive Vercel geolocation headers. A supplied
-  // header is still checked, making explicit local country tests possible.
-  if (process.env.NODE_ENV === "development" && rawCountry === null) {
+  // Local dev and localhost production previews have no Vercel country header.
+  // Keep Vercel deployments protected, and still check explicitly supplied
+  // country headers so local country tests continue to work.
+  // Next can construct request.url with an internal localhost origin, so prefer
+  // the actual Host header when deciding whether this is a loopback request.
+  const host = request.headers.get("host") ?? new URL(request.url).host;
+  const loopbackHost = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(host);
+  const vercelDeployment = process.env.VERCEL === "1" ||
+    process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview";
+  if (!vercelDeployment && rawCountry === null &&
+    (process.env.NODE_ENV === "development" || loopbackHost)) {
     return NextResponse.next();
   }
   if (country === "US") return NextResponse.next();

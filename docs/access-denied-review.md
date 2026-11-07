@@ -88,9 +88,11 @@ The Express location endpoint is not part of the new Next.js decision path.
   generated avatars, and standard metadata files are exempt so the notice can
   load without a redirect loop. Arbitrary file extensions and Next data routes
   are not exempt. Update the explicit asset allowlist when adding asset paths.
-- Local `next dev` works without a Vercel country header. If a country header is
-  explicitly supplied, it is checked even in development. Production never
-  silently defaults an unknown country to US.
+- Local `next dev` works without a Vercel country header. Local production
+  previews also allow `localhost`, `127.0.0.1`, and IPv6 loopback (`[::1]`) without
+  that header. This exception is disabled on Vercel deployments. An explicitly
+  supplied country header is still checked, including in local development.
+  Public production requests never default an unknown country to US.
 
 The access-denied interface is CSR, using a Client Component with `ssr: false`
 and a static loading shell. Its metadata includes `noindex`. It follows the
@@ -114,9 +116,12 @@ of Vercel, verify which public IP Vercel sees; this can otherwise be the proxy's
 IP instead of the visitor's.
 
 In a local production preview (`next start`), Vercel does not add the header;
-requests without it show the verification-unavailable page. Test country cases
-with explicit request headers, use `next dev` for ordinary local development,
-and verify the real geolocation behavior on a Vercel preview deployment.
+loopback-host requests without it are allowed. Non-local production URLs still
+require a country header. Test country cases with explicit request headers, use
+`next dev` for ordinary local development, and verify real geolocation behavior
+on a Vercel preview deployment. The server-side `VERCEL` and `VERCEL_ENV`
+[system environment variables](https://vercel.com/docs/environment-variables/system-environment-variables)
+disable the local exception on Vercel.
 
 The separate Express deployment remains directly reachable under its existing
 rules. Next.js Proxy protects requests arriving through Next.js, including its
@@ -132,6 +137,10 @@ No database collections, auth behavior, or infrastructure settings are changed.
 - Proxy checks using Next's actual matcher verified page/API/data coverage,
   asset exclusions, US normalization, foreign-country redirects, missing/invalid
   header handling, development behavior, and unchanged cookies.
+- Loopback regression checks verified ordinary production-preview access through
+  `localhost`, `127.0.0.1`, and `[::1]`. Public Host headers and simulated Vercel
+  deployments remain restricted, including when the server's internal URL uses
+  localhost. Explicit foreign-country headers still produce denial responses.
 - HTTP checks against a local production preview verified 307 page redirects,
   403/503 API JSON, US page/session access, the CSR loading shell and noindex
   metadata, and access to required assets. Denied Home and API requests did not
